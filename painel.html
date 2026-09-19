@@ -79,7 +79,15 @@
     display:none;
   }
   .model-plate{
-    font-weight:900;font-size:clamp(34px,4.7vw,88px);
+    display:none;
+  }
+  .model-current{
+    font-weight:900;font-size:clamp(28px,3.2vw,58px);
+    color:#f5f7fb;text-transform:uppercase;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+  }
+  .plate{
+    font-weight:900;font-size:clamp(52px,8vw,150px);
     color:#ff5a60;text-transform:uppercase;
     text-shadow:0 0 16px rgba(255,55,65,.55),0 0 38px rgba(255,30,40,.22);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
@@ -170,7 +178,8 @@
       <div class="current-title">SOLICITAÇÃO ATUAL</div>
       <div class="current-box">
         <div class="current-info">
-          <div class="model-plate" id="currentModelPlate">AGUARDANDO — PLACA</div>
+          <div class="model-current" id="currentModel">AGUARDANDO</div>
+          <div class="plate" id="currentPlate">PLACA</div>
         </div>
       </div>
       <div class="origin" id="currentOrigin">ORIGEM: —</div>
@@ -191,7 +200,8 @@
 
 <script>
 const recent = document.getElementById('recent');
-const currentModelPlate = document.getElementById('currentModelPlate');
+const currentModel = document.getElementById('currentModel');
+const currentPlate = document.getElementById('currentPlate');
 const currentOrigin = document.getElementById('currentOrigin');
 const soundBtn = document.getElementById('soundBtn');
 let audioCtx = null;
@@ -269,7 +279,8 @@ function render(list){
     const model = c.model || c.modelo || 'MODELO NÃO INFORMADO';
     const plate = c.plate || c.placa || 'SEM PLACA';
     const key = String(c.id ?? c._id ?? c.createdAt ?? c.created_at ?? (model + '|' + plate));
-    currentModelPlate.textContent = model + ' — ' + plate;
+    currentModel.textContent = model;
+    currentPlate.textContent = plate;
     currentOrigin.textContent = 'ORIGEM: ' + (c.operator || c.operador || c.origin || c.origem || '—');
 
     if(!initialized){
@@ -280,7 +291,8 @@ function render(list){
       notifyCall(model, plate);
     }
   }else{
-    currentModelPlate.textContent = 'AGUARDANDO — PLACA';
+    currentModel.textContent = 'AGUARDANDO';
+    currentPlate.textContent = 'PLACA';
     currentOrigin.textContent = 'ORIGEM: —';
   }
 
