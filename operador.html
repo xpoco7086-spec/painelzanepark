@@ -2,7 +2,7 @@
 const who=sessionStorage.operator;if(!who)location="/login.html";document.getElementById("who").textContent=who;
 plate.oninput=()=>plate.value=plate.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,7);
 function esc(x){return String(x).replace(/[&<>"']/g,a=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[a]))}
-function renderMine(calls){myList.innerHTML=calls.length?calls.map((c,i)=>'<div class="row"><b>'+(i+1)+'</b><span><strong>'+esc(c.model)+'</strong><small>'+(c.plate?esc(c.plate):"Sem placa")+'</small></span></div>').join(""):'<p class="muted">Nenhum chamado ainda.</p>'}
+function renderMine(calls){myList.innerHTML=calls.length?calls.map((c,i)=>'<div class="row"><b>'+(i+1)+'</b><span><strong>'+esc(c.model)+'</strong><small>'+(c.plate?esc(c.plate):"digitar qalqer coisa ")+'</small></span></div>').join(""):'<p class="muted">Nenhum chamado ainda.</p>'}
 async function loadMine(){let r=await fetch("/api/calls?operator="+encodeURIComponent(who)),d=await r.json();renderMine(d.calls||[])}
 async function callCar(){msg.textContent="";let m=model.value.trim(),p=plate.value.trim();if(!m)return msg.textContent="Informe o modelo do veículo.";if(p&&p.length!==2&&p.length!==7)return msg.textContent="A placa livre.";let r=await fetch("/api/calls",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({operator:who,model:m,plate:p})}),d=await r.json();if(d.ok){msg.textContent="Chamado enviado!";model.value="";plate.value="";model.focus();loadMine()}else msg.textContent=d.message}
 io().on("new-call",c=>{if(c.operator===who)loadMine()});loadMine();
