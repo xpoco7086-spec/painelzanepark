@@ -1,106 +1,18 @@
-!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Operador - Zane Park</title>
-  <link rel="stylesheet" href="/styles.css">
-</head>
-<body>
-  <main class="wrap">
-    <header>
-      <b>ZANE PARK</b>
-      <span>Operador: <strong id="who"></strong></span>
-    </header>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Operador</title><link rel="stylesheet" href="/styles.css"></head><body><main class="wrap"><header><b>ZANE PARK</b><span>Operador: <strong id="who"></strong></span></header><section class="card"><h2>Chamar veículo</h2><label>Modelo do carro<input id="model" placeholder="Ex.: Honda Civic"></label><label>Placa <small>(opcional: 2 caracteres ou placa completa)</small><input id="plate" maxlength="7" placeholder="Diditar placa"></label><button onclick="callCar()">CHAMAR CARRO</button><p id="msg"></p></section><section class="card recent"><h3>Últimos carros chamados</h3><div id="myList"><p class="muted">Nenhum chamado ainda.</p></div></section></main><script src="/socket.io/socket.io.js"></script><script>
 
-    <section class="card">
-      <h2>Chamar veículo</h2>
-      <label>
-        Modelo do carro
-        <input id="model" placeholder="Ex.: Honda Civic">
-      </label>
-      <label>
-        Placa <small>(opcional)</small>
-        <!-- Campo totalmente livre sem bloqueios ou travas -->
-        <input id="plate" placeholder="Digite absolutamente qualquer coisa">
-      </label>
-      <button onclick="callCar()">CHAMAR CARRO</button>
-      <p id="msg"></p>
-    </section>
+const who=sessionStorage.operator;if(!who)location="/login.html";document.getElementById("who").textContent=who;
 
-    <section class="card recent">
-      <h3>Últimos carros chamados</h3>
-      <div id="myList">
-        <p class="muted">Nenhum chamado ainda.</p>
-      </div>
-    </section>
-  </main>
+plate.oninput=()=>plate.value=plate.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,7);
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const who = sessionStorage.operator;
-    if (!who) location = "/login.html";
-    document.getElementById("who").textContent = who;
+function esc(x){return String(x).replace(/[&<>"']/g,a=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[a]))}
 
-    // REMOVIDO: Nenhuma instrução de bloqueio no evento oninput do campo plate.
+function renderMine(calls){myList.innerHTML=calls.length?calls.map((c,i)=>'<div class="row"><b>'+(i+1)+'</b><span><strong>'+esc(c.model)+'</strong><small>'+(c.plate?esc(c.plate):"digitar qalqer coisa ")+'</small></span></div>').join(""):'<p class="muted">Nenhum chamado ainda.</p>'}
 
-    function esc(x) {
-      return String(x).replace(/[&<>"']/g, a => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-      }[a]));
-    }
+async function loadMine(){let r=await fetch("/api/calls?operator="+encodeURIComponent(who)),d=await r.json();renderMine(d.calls||[])}
 
-    function renderMine(calls) {
-      myList.innerHTML = calls.length ? calls.map((c, i) => 
-        '<div class="row"><b>' + (i + 1) + '</b><span><strong>' + esc(c.model) + '</strong><small>' + 
-        (c.plate ? esc(c.plate) : 'Sem placa') + '</small></span></div>'
-      ).join("") : '<p class="muted">Nenhum chamado ainda.</p>';
-    }
+async function callCar(){msg.textContent="";let m=model.value.trim(),p=plate.value.trim();if(!m)return msg.textContent="Informe o modelo do veículo.";if(p&&p.length!==2&&p.length!==7)return msg.textContent="A placa livre.";let r=await fetch("/api/calls",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({operator:who,model:m,plate:p})}),d=await r.json();if(d.ok){msg.textContent="Chamado enviado!";model.value="";plate.value="";model.focus();loadMine()}else msg.textContent=d.message}
 
-    async function loadMine() {
-      try {
-        let r = await fetch("/api/calls?operator=" + encodeURIComponent(who));
-        let d = await r.json();
-        renderMine(d.calls || []);
-      } catch (err) {
-        console.error("Erro ao carregar chamados:", err);
-      }
-    }
+io().on("new-call",c=>{if(c.operator===who)loadMine()});loadMine();
 
-    async function callCar() {
-      msg.textContent = "";
-      let m = model.value.trim();
-      let p = plate.value.trim();
+</script></body></html> 
 
-      if (!m) return msg.textContent = "Informe o modelo do veículo.";
-
-      try {
-        let r = await fetch("/api/calls", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ operator: who, model: m, plate: p })
-        });
-        let d = await r.json();
-
-        if (d.ok) {
-          msg.textContent = "Chamado enviado!";
-          model.value = "";
-          plate.value = "";
-          model.focus();
-          loadMine();
-        } else {
-          msg.textContent = d.message || "Erro ao enviar chamado.";
-        }
-      } catch (err) {
-        msg.textContent = "Erro de conexão com o servidor.";
-      }
-    }
-
-    io().on("new-call", c => {
-      if (c.operator === who) loadMine();
-    });
-
-    loadMine();
-  </script>
-</body>
-</html>
