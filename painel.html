@@ -1,11 +1,134 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Painel Zane Park</title><link rel="stylesheet" href="/styles.css"></head><body><main class="panel"><header><b>ZANE PARK</b><button id="sound">🔊 Ativar som e voz</button></header><section id="current" class="current"><small>AGUARDANDO CHAMADA</small><strong id="model">—</strong><strong id="plate">—</strong><span id="origin">—</span></section><h2>Últimos 8 chamados</h2><div id="list"></div></main><script src="/socket.io/socket.io.js"></script><script>
-let q=[],busy=false,history=[],ready=false,ctx;
-sound.onclick=()=>{ready=true;ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();ctx.resume();speechSynthesis.cancel();sound.textContent="🔊 Som e voz ativados"};
-function esc(x){return String(x).replace(/[&<>"']/g,a=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[a]))}
-function render(){list.innerHTML=history.slice(0,8).map((c,i)=>'<div class="row"><b>'+(i+1)+'</b><span><strong>'+esc(c.model)+'</strong><small>'+(c.plate?esc(c.plate):"Sem placa")+' · '+esc(c.origin)+'</small></span></div>').join("")}
-function beeps(){if(!ready)return;ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();let n=ctx.currentTime,g=ctx.createGain();g.connect(ctx.destination);g.gain.value=.0001;[0,.42,.84].forEach(t=>{let o=ctx.createOscillator();o.frequency.value=880;o.connect(g);o.start(n+t);o.stop(n+t+.2)});g.gain.exponentialRampToValueAtTime(.0001,n+1.1)}
-function voice(c){if(!ready)return;speechSynthesis.cancel();let p=c.plate?c.plate.split("").join(" "):"",u=new SpeechSynthesisUtterance("Saindo. Veículo "+c.model+"."+ (p?" Placa "+p+".":"") +" Origem "+c.origin+".");u.lang="pt-BR";u.rate=.92;speechSynthesis.speak(u)}
-function next(){if(busy||!q.length)return;busy=true;let c=q.shift();model.textContent=c.model;plate.textContent=c.plate||"SEM PLACA";origin.textContent="ORIGEM: "+c.origin;current.classList.remove("flash");void current.offsetWidth;current.classList.add("flash");beeps();setTimeout(()=>voice(c),1200);setTimeout(()=>{busy=false;next()},6000)}
-async function load(){let d=await fetch("/api/calls").then(r=>r.json());history=d.calls||[];render()}
-io().on("new-call",c=>{history=[c,...history.filter(x=>x.id!==c.id)].slice(0,8);render();q.push(c);next()});load();
-</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZANE PARK — Painel</title>
+<link rel="stylesheet" href="/styles.css">
+<style>
+body.panel-body{background:#050505!important;color:#fff}
+.panel-header .brand-mark{color:#ff1525}
+.current-box,.recent{background:#0b0b0b!important;border-color:#ff1525!important}
+.section-title{background:#ff1525!important;color:#fff}
+.recent .section-title{background:transparent!important}
+.current-model{color:#fff}.current-plate{color:#ff5b61}.origin{color:#ff5b61}
+
+/* 8 últimos chamados: 4 na primeira fileira + 4 na segunda */
+#recent{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-rows:repeat(2,minmax(90px,auto));
+  gap:10px;
+  padding:10px;
+}
+.recent-item{
+  background:#111!important;
+  border:1px solid #ff1525!important;
+  border-radius:8px;
+  padding:10px;
+  min-width:0;
+  border-bottom-color:#ff1525!important;
+}
+.recent-time{font-size:12px;opacity:.8;margin-bottom:5px}
+.recent-main{min-width:0}
+.recent-main strong{
+  display:block;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.recent-main span{
+  display:block;
+  color:#ff5b61;
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  margin-top:3px;
+}
+.recent-main small{
+  display:block;
+  margin-top:5px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  opacity:.75;
+}
+@media(max-width:800px){
+  #recent{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none}
+}
+</style>
+</head>
+<body class="panel-body">
+<header class="panel-header">
+<div class="brand"><span class="brand-mark">≈</span><span>ZANE PARK</span></div>
+<div class="clock"><div id="time">--:--:--</div><small>PAINEL DE CHAMADAS</small></div>
+</header>
+
+<section class="panel-grid">
+<article class="current-box" aria-live="polite">
+<div class="section-title">CHAMANDO AGORA</div>
+<div class="current-content">
+<div class="current-model" id="model">AGUARDANDO</div>
+<div class="plate-label">PLACA</div>
+<div class="current-plate" id="plate">—</div>
+<div class="origin" id="origin">ZANE PARK</div>
+</div>
+</article>
+
+<aside class="recent">
+<div class="section-title">ÚLTIMAS CHAMADAS</div>
+<div id="recent"><div class="empty">Nenhuma chamada ainda.</div></div>
+</aside>
+</section>
+
+<footer class="panel-footer"><span>ZANE PARK</span><span id="status">Conectando...</span></footer>
+
+<script>
+const $=id=>document.getElementById(id);
+function tick(){$("time").textContent=new Date().toLocaleTimeString("pt-BR")} setInterval(tick,1000);tick();
+
+function esc(v){
+  return String(v??"").replace(/[&<>"']/g,c=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]))
+}
+
+let last="";
+function show(c){
+  const model=c.model||"VEÍCULO", plate=c.plate||"PLACA NÃO INFORMADA", op=c.operator||"ZANE PARK";
+  $("model").textContent=model;
+  $("plate").textContent=plate;
+  $("origin").textContent="Operador: "+op;
+
+  if(last===JSON.stringify(c))return;
+  last=JSON.stringify(c);
+
+  $("recent").querySelector(".empty")?.remove();
+
+  const d=document.createElement("div");
+  d.className="recent-item latest";
+  d.innerHTML=
+    '<div class="recent-time">'+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+'</div>'+
+    '<div class="recent-main"><strong>'+esc(model)+'</strong><span>'+esc(plate||"—")+'</span><small>Operador: '+esc(op)+'</small></div>';
+
+  $("recent").prepend(d);
+  while($("recent").children.length>8)$("recent").lastElementChild.remove();
+}
+
+async function load(){
+  try{
+    const r=await fetch("/api/calls",{cache:"no-store"});
+    if(!r.ok)throw 0;
+    const x=await r.json();
+    const a=Array.isArray(x)?x:(x.calls||[]);
+    if(a.length)show(a[a.length-1]);
+    $("status").textContent="ONLINE";
+  }catch(e){
+    $("status").textContent="AGUARDANDO SERVIDOR";
+  }
+}
+load();setInterval(load,1500);
+</script>
+</body>
+</html>
