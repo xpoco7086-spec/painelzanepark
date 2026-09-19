@@ -271,6 +271,70 @@ function formatTime(v){
   return String(v).slice(0,5);
 }
 
+
+// Fila de chamadas: quando chegam várias solicitações, uma é anunciada
+// por vez, com 10 segundos entre uma chamada e a próxima.
+const callQueue = [];
+const seenCallKeys = new Set();
+let queueRunning = false;
+let initialCallsLoaded = false;
+
+function callKey(c){
+  return String(
+    c?.id ?? c?._id ?? c?.createdAt ?? c?.created_at ??
+    `${c?.model ?? c?.modelo ?? ''}|${c?.plate ?? c?.placa ?? ''}|${c?.operator ?? c?.origin ?? ''}|${c?.time ?? ''}`
+  );
+}
+
+function sleep(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
+
+async function processCallQueue(){
+  if(queueRunning) return;
+  queueRunning = true;
+  while(callQueue.length){
+    const c = callQueue.shift();
+    renderSingleCurrent(c);
+    notifyCall(c.model || c.modelo || c.name || 'veículo', c.plate || c.placa || '');
+    await sleep(10000);
+  }
+  queueRunning = false;
+}
+
+function enqueueNewCalls(calls){
+  if(!Array.isArray(calls)) return;
+
+  // Não anuncia o histórico quando o painel é aberto.
+  if(!initialCallsLoaded){
+    calls.forEach(c => seenCallKeys.add(callKey(c)));
+    initialCallsLoaded = true;
+    return;
+  }
+
+  const fresh = [];
+  for(const c of calls){
+    const key = callKey(c);
+    if(!seenCallKeys.has(key)){
+      seenCallKeys.add(key);
+      fresh.push(c);
+    }
+  }
+
+  // API costuma trazer do mais novo para o mais antigo.
+  fresh.reverse().forEach(c => callQueue.push(c));
+  if(fresh.length) processCallQueue();
+}
+
+function renderSingleCurrent(c){
+  const model = c?.model || c?.modelo || 'MODELO NÃO INFORMADO';
+  const plate = c?.plate || c?.placa || 'PLACA NÃO INFORMADA';
+  const origin = c?.operator || c?.origin || c?.local || 'ORIGEM NÃO INFORMADA';
+
+  if(currentModel) currentModel.textContent = model;
+  if(currentPlate) currentPlate.textContent = plate;
+  const originEl = document.getElementById('currentOrigin');
+  if(originEl) originEl.textContent = origin;
+}
+
 function render(list){
   const calls = Array.isArray(list) ? list : [];
 
@@ -316,7 +380,9 @@ async function load(){
   try{
     const r=await fetch('/api/calls',{cache:'no-store'});
     const data=await r.json();
-    render(data.calls || data || []);
+    const calls = data.calls || data || [];
+    render(calls);
+    enqueueNewCalls(calls);
   }catch(e){
     render([]);
   }
