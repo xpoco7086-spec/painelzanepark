@@ -25,9 +25,14 @@ app.post("/api/calls", (req, res) => {
   };
 
   calls.unshift(call);
+
+  // Mantém somente as 50 chamadas mais recentes
   calls = calls.slice(0, 50);
 
-  res.json({ success: true, call });
+  res.json({
+    success: true,
+    call
+  });
 });
 
 app.listen(PORT, "0.0.0.0", () => {
