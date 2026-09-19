@@ -118,13 +118,10 @@
     overflow:hidden;
   }
   .card .time{font-size:clamp(13px,1.4vw,22px);font-weight:800;color:#dce2eb}
-  .card .operator{font-size:clamp(13px,1.45vw,23px);font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .card .plate-small{font-size:clamp(12px,1.35vw,21px);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .card .label{font-size:clamp(9px,1vw,15px);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .card .model-small{
-    font-size:clamp(10px,1.15vw,17px);font-weight:800;color:#f5f7fb;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis
-  }
+  .card .operator{font-size:clamp(11px,1.15vw,18px);font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .model-small{font-size:clamp(13px,1.35vw,21px);font-weight:900;color:#f5f7fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .plate-small{font-size:clamp(13px,1.35vw,21px);font-weight:900;color:#ff6670;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .origin-small{font-size:clamp(10px,1vw,15px);color:#d6dde8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   .bottom{
     height:8%;display:flex;align-items:flex-end;justify-content:space-between;
@@ -290,14 +287,15 @@ function render(list){
   recent.innerHTML = Array.from({length:8},(_,i)=>{
     const c=calls[i];
     if(!c) return '<div class="card" style="opacity:.16"></div>';
-    const operator=c.operator || c.operador || '—';
+    const operator=c.operator || c.operador || c.origin || c.origem || '—';
     const plate=c.plate || c.placa || 'SEM PLACA';
-    const model=c.model || c.modelo || '';
+    const model=c.model || c.modelo || 'MODELO NÃO INFORMADO';
     return `
       <div class="card">
         <div class="time">${esc(formatTime(c.createdAt || c.created_at || c.time || c.hora))}</div>
-        <div class="operator">${esc(operator)}</div>
-        <div class="model-small">${esc((model || 'MODELO NÃO INFORMADO') + ' — ' + plate)}</div>
+        <div class="model-small">${esc(model)}</div>
+        <div class="plate-small">${esc(plate)}</div>
+        <div class="origin-small">Origem: ${esc(operator)}</div>
       </div>`;
   }).join('');
 }
