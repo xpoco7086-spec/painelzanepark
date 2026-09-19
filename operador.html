@@ -1,4 +1,4 @@
-<!doctype html>
+!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
@@ -21,7 +21,8 @@
       </label>
       <label>
         Placa <small>(opcional)</small>
-        <input id="plate" placeholder="Digite qualquer texto ou identificador">
+        <!-- Campo totalmente livre sem bloqueios ou travas -->
+        <input id="plate" placeholder="Digite absolutamente qualquer coisa">
       </label>
       <button onclick="callCar()">CHAMAR CARRO</button>
       <p id="msg"></p>
@@ -41,10 +42,7 @@
     if (!who) location = "/login.html";
     document.getElementById("who").textContent = who;
 
-    // Apenas converte para maiúsculas (aceita qualquer caractere, letra, número, espaço, traço, etc.)
-    plate.oninput = () => {
-      plate.value = plate.value.toUpperCase();
-    };
+    // REMOVIDO: Nenhuma instrução de bloqueio no evento oninput do campo plate.
 
     function esc(x) {
       return String(x).replace(/[&<>"']/g, a => ({
