@@ -21,7 +21,7 @@
       </label>
       <label>
         Placa <small>(opcional)</small>
-        <input id="plate" placeholder="Digite a placa ou qualquer identificador">
+        <input id="plate" placeholder="Digite qualquer texto ou identificador">
       </label>
       <button onclick="callCar()">CHAMAR CARRO</button>
       <p id="msg"></p>
@@ -41,9 +41,9 @@
     if (!who) location = "/login.html";
     document.getElementById("who").textContent = who;
 
-    // Converte para maiúsculas e remove caracteres especiais
+    // Apenas converte para maiúsculas (aceita qualquer caractere, letra, número, espaço, traço, etc.)
     plate.oninput = () => {
-      plate.value = plate.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      plate.value = plate.value.toUpperCase();
     };
 
     function esc(x) {
