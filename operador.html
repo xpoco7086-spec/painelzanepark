@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Zane Park — Chamar carro</title>
   <link rel="stylesheet" href="/styles.css">
+  <style>
+    .plate-options{display:flex;gap:8px;margin:8px 0 10px}
+    .plate-option{flex:1;padding:10px;border:1px solid #555;background:#111;color:#fff;border-radius:8px;cursor:pointer}
+    .plate-option.active{background:#ff1525;border-color:#ff1525}
+  </style>
 </head>
 <body class="app-bg">
   <main class="operator-card">
@@ -20,10 +25,16 @@
       <input id="model" maxlength="40" placeholder="Ex.: Corolla">
     </label>
 
+    <label>Tipo de placa</label>
+    <div class="plate-options">
+      <button type="button" class="plate-option active" id="freePlate">PLACA LIVRE</button>
+      <button type="button" class="plate-option" id="fullPlate">PLACA COMPLETA</button>
+    </div>
+
     <label>Placa
-      <input id="plate" maxlength="8" autocapitalize="characters"
-             placeholder="Digite a placa" autocomplete="off">
-      <span class="hint">Digite a placa livremente, com ou sem hífen.</span>
+      <input id="plate" autocapitalize="characters"
+             placeholder="PLACA LIVRE" autocomplete="off">
+      <span class="hint" id="plateHint">Digite PLACA LIVRE ou altere para o texto que quiser.</span>
     </label>
 
     <button class="btn primary call-btn" id="call">CHAMAR CARRO</button>
@@ -35,33 +46,111 @@ const operator = sessionStorage.getItem("operator");
 if (!operator || operator === "ADM") location.href = "/login.html";
 document.getElementById("operator").textContent = operator;
 
+const plate = document.getElementById("plate");
+const freePlate = document.getElementById("freePlate");
+const fullPlate = document.getElementById("fullPlate");
+const plateHint = document.getElementById("plateHint");
+
+freePlate.onclick = () => {
+  freePlate.classList.add("active");
+  fullPlate.classList.remove("active");
+  plate.value = "PLACA LIVRE";
+  plate.placeholder = "PLACA LIVRE";
+  plateHint.textContent = "Você pode editar este texto se quiser.";
+  plate.focus();
+  plate.select();
+};
+
+fullPlate.onclick = () => {
+  fullPlate.classList.add("active");
+  freePlate.classList.remove("active");
+  plate.value = "";
+  plate.placeholder = "Digite a placa completa";
+  plateHint.textContent = "Digite a placa completa, com ou sem hífen.";
+  plate.focus();
+};
+
 document.getElementById("call").onclick = async () => {
   const model = document.getElementById("model").value.trim();
-  const plate = document.getElementById("plate").value.trim();
+  const plateValue = plate.value.trim();
   const status = document.getElementById("status");
-  if (!model || !plate) {
-    status.textContent = "Informe o modelo e a placa.";
+
+  if (!model) {
+    status.textContent = "Informe o modelo.";
     status.className = "status error";
     return;
   }
+
+  if (!plateValue) {
+    status.textContent = "Informe a placa ou selecione PLACA LIVRE.";
+    status.className = "status error";
+    return;
+  }
+
   const btn = document.getElementById("call");
   btn.disabled = true;
-  const r = await fetch("/api/calls", {
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({model, plate, operator})
-  });
-  const data = await r.json();
-  btn.disabled = false;
-  if (!r.ok) {
-    status.textContent = data.message || "Não foi possível chamar.";
+
+  try {
+    const r = await fetch("/api/calls", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({model, plate: plateValue, operator})
+    });
+
+    const data = await r.json();
+    btn.disabled = false;
+
+    if (!r.ok) {
+      status.textContent = data.message || "Não foi possível chamar.";
+      status.className = "status error";
+      return;
+    }
+
+    status.textContent = "Carro chamado com sucesso!";
+    status.className = "status success";
+
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        const audio = new AudioCtx();
+        const beep = (delay) => {
+          const osc = audio.createOscillator();
+          const gain = audio.createGain();
+          osc.frequency.value = 880;
+          gain.gain.value = 0.12;
+          osc.connect(gain);
+          gain.connect(audio.destination);
+          osc.start(audio.currentTime + delay);
+          osc.stop(audio.currentTime + delay + 0.12);
+        };
+        beep(0); beep(0.22); beep(0.44);
+      }
+    } catch (_) {}
+
+    setTimeout(() => {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(
+          `Saindo, veículo ${model}, placa ${plateValue}`
+        );
+        msg.lang = "pt-BR";
+        msg.rate = 0.9;
+        window.speechSynthesis.speak(msg);
+      }
+    }, 750);
+
+    document.getElementById("model").value = "";
+    plate.value = "";
+    freePlate.classList.add("active");
+    fullPlate.classList.remove("active");
+    plate.placeholder = "PLACA LIVRE";
+    plateHint.textContent = "Você pode editar este texto se quiser.";
+    document.getElementById("model").focus();
+  } catch (e) {
+    btn.disabled = false;
+    status.textContent = "Erro de conexão com o servidor.";
     status.className = "status error";
-    return;
   }
-  status.textContent = "Carro chamado com sucesso!";
-  status.className = "status success";
-  document.getElementById("model").value = "";
-  document.getElementById("plate").value = "";
-  document.getElementById("model").focus();
 };
 
 document.getElementById("logout").onclick = () => {
