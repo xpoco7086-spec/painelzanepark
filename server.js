@@ -5,7 +5,7 @@ const operators={"Bali":"1234","Pergoletta":"1234","Cão Veio":"1234","Estaciona
 let calls=[];try{calls=JSON.parse(fs.readFileSync(file,"utf8"))}catch{}
 let nextId=calls.reduce((m,c)=>Math.max(m,Number(c.id)||0),0)+1;
 const save=()=>fs.writeFileSync(file,JSON.stringify(calls.slice(-200),null,2));
-app.use(express.json());app.use(express.static(path.join(__dirname,"public")));
+app.use(express.json());app.use(express.static(path.join(__dirname,".")));
 app.post("/api/login",(q,s)=>{let{operator,password}=q.body||{};if(operators[operator]===password)return s.json({ok:true,operator});s.status(401).json({ok:false,message:"Usuário ou senha inválidos."})});
 app.get("/api/calls",(q,s)=>{let operator=String(q.query.operator||"").trim();
 let data=operator?calls.filter(c=>c.operator===operator).slice(-8).reverse():calls.slice(-8).reverse();
