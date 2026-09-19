@@ -270,9 +270,8 @@ function formatTime(v){
 }
 
 
-// Fila de chamadas: uma chamada por vez.
-// O próximo veículo só é anunciado depois que o anterior terminou
-// e passaram 10 segundos.
+// Fila de chamadas: quando chegam várias solicitações, uma é anunciada
+// por vez, com 10 segundos entre uma chamada e a próxima.
 const callQueue = [];
 const seenCallKeys = new Set();
 let queueRunning = false;
@@ -285,95 +284,24 @@ function callKey(c){
   );
 }
 
-function sleep(ms){
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function playBeeps(){
-  return new Promise(resolve => {
-    if(!soundEnabled || !audioCtx){
-      resolve();
-      return;
-    }
-
-    beep();
-    setTimeout(beep, 250);
-    setTimeout(beep, 500);
-
-    // Aguarda o último beep terminar.
-    setTimeout(resolve, 700);
-  });
-}
-
-function speakVehicle(model, plate){
-  return new Promise(resolve => {
-    if(!soundEnabled || !('speechSynthesis' in window)){
-      resolve();
-      return;
-    }
-
-    // Cancela qualquer fala anterior antes de iniciar esta.
-    speechSynthesis.cancel();
-
-    const u = new SpeechSynthesisUtterance(
-      `Saindo, veículo ${model}, placa ${plate}`
-    );
-    u.lang = 'pt-BR';
-    u.rate = 0.9;
-    u.pitch = 1;
-    u.volume = 1;
-
-    u.onend = resolve;
-    u.onerror = resolve;
-
-    speechSynthesis.speak(u);
-  });
-}
-
-async function announceOne(c){
-  const model = c?.model || c?.modelo || c?.name || 'veículo';
-  const plate = c?.plate || c?.placa || '';
-
-  // Só este veículo fica ativo.
-  renderSingleCurrent(c);
-
-  // Primeiro toca os avisos sonoros.
-  await playBeeps();
-
-  // Depois fala o veículo.
-  await speakVehicle(model, plate);
-}
+function sleep(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
 
 async function processCallQueue(){
   if(queueRunning) return;
-
   queueRunning = true;
-
-  try{
-    while(callQueue.length > 0){
-      const c = callQueue.shift();
-
-      // Um veículo por vez. Nenhuma outra chamada é falada aqui.
-      await announceOne(c);
-
-      // Só depois que terminou a chamada atual,
-      // espera 10 segundos para liberar a próxima.
-      await sleep(10000);
-    }
-  } finally {
-    queueRunning = false;
-
-    // Se chegou chamada durante o processamento, continua a fila.
-    if(callQueue.length > 0){
-      processCallQueue();
-    }
+  while(callQueue.length){
+    const c = callQueue.shift();
+    renderSingleCurrent(c);
+    notifyCall(c.model || c.modelo || c.name || 'veículo', c.plate || c.placa || '');
+    await sleep(10000);
   }
+  queueRunning = false;
 }
 
 function enqueueNewCalls(calls){
   if(!Array.isArray(calls)) return;
 
-  // Não anuncia chamadas antigas quando o painel é aberto.
+  // Não anuncia o histórico quando o painel é aberto.
   if(!initialCallsLoaded){
     calls.forEach(c => seenCallKeys.add(callKey(c)));
     initialCallsLoaded = true;
@@ -381,23 +309,17 @@ function enqueueNewCalls(calls){
   }
 
   const fresh = [];
-
   for(const c of calls){
     const key = callKey(c);
-
     if(!seenCallKeys.has(key)){
       seenCallKeys.add(key);
       fresh.push(c);
     }
   }
 
-  // A API normalmente retorna do mais novo para o mais antigo.
-  // Inverte para chamar primeiro quem chegou primeiro.
+  // API costuma trazer do mais novo para o mais antigo.
   fresh.reverse().forEach(c => callQueue.push(c));
-
-  if(fresh.length){
-    processCallQueue();
-  }
+  if(fresh.length) processCallQueue();
 }
 
 function renderSingleCurrent(c){
@@ -419,18 +341,20 @@ function render(list){
     const model = c.model || c.modelo || 'MODELO NÃO INFORMADO';
     const plate = c.plate || c.placa || 'SEM PLACA';
     const key = String(c.id ?? c._id ?? c.createdAt ?? c.created_at ?? (model + '|' + plate));
-    currentModel.textContent = model;
-    currentPlate.textContent = plate;
-    currentOrigin.textContent = 'ORIGEM: ' + (c.operator || c.operador || c.origin || c.origem || '—');
+    if(!queueRunning){
+      currentModel.textContent = model;
+      currentPlate.textContent = plate;
+      currentOrigin.textContent = 'ORIGEM: ' + (c.operator || c.operador || c.origin || c.origem || '—');
+    }
 
     if(!initialized){
       lastCallKey = key;
       initialized = true;
     }else if(key !== lastCallKey){
-      // Chamadas novas são anunciadas somente pela fila sequencial.
       lastCallKey = key;
+      notifyCall(model, plate);
     }
-  }else{
+  }else if(!queueRunning){
     currentModel.textContent = 'AGUARDANDO';
     currentPlate.textContent = 'PLACA';
     currentOrigin.textContent = 'ORIGEM: —';
