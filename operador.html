@@ -1,18 +1,73 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Operador</title><link rel="stylesheet" href="/styles.css"></head><body><main class="wrap"><header><b>ZANE PARK</b><span>Operador: <strong id="who"></strong></span></header><section class="card"><h2>Chamar veículo</h2><label>Modelo do carro<input id="model" placeholder="Ex.: Honda Civic"></label><label>Placa <small>(opcional: 2 caracteres ou placa completa)</small><input id="plate" maxlength="7" placeholder="Diditar placa"></label><button onclick="callCar()">CHAMAR CARRO</button><p id="msg"></p></section><section class="card recent"><h3>Últimos carros chamados</h3><div id="myList"><p class="muted">Nenhum chamado ainda.</p></div></section></main><script src="/socket.io/socket.io.js"></script><script>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Zane Park — Chamar carro</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="app-bg">
+  <main class="operator-card">
+    <div class="topline">
+      <div class="brand"><span class="brand-mark">≈</span><span>ZANE PARK</span></div>
+      <button class="link-btn" id="logout">Sair</button>
+    </div>
+    <div class="user-pill">Operador: <strong id="operator"></strong></div>
 
-const who=sessionStorage.operator;if(!who)location="/login.html";document.getElementById("who").textContent=who;
+    <h1>Chamar carro</h1>
 
-plate.oninput=()=>plate.value=plate.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,7);
+    <label>Modelo do carro
+      <input id="model" maxlength="40" placeholder="Ex.: Corolla">
+    </label>
 
-function esc(x){return String(x).replace(/[&<>"']/g,a=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[a]))}
+    <label>Placa
+      <input id="plate" maxlength="8" autocapitalize="characters"
+             placeholder="Digite a placa" autocomplete="off">
+      <span class="hint">Digite a placa livremente, com ou sem hífen.</span>
+    </label>
 
-function renderMine(calls){myList.innerHTML=calls.length?calls.map((c,i)=>'<div class="row"><b>'+(i+1)+'</b><span><strong>'+esc(c.model)+'</strong><small>'+(c.plate?esc(c.plate):"digitar qalqer coisa ")+'</small></span></div>').join(""):'<p class="muted">Nenhum chamado ainda.</p>'}
+    <button class="btn primary call-btn" id="call">CHAMAR CARRO</button>
+    <p id="status" class="status"></p>
+  </main>
 
-async function loadMine(){let r=await fetch("/api/calls?operator="+encodeURIComponent(who)),d=await r.json();renderMine(d.calls||[])}
+<script>
+const operator = sessionStorage.getItem("operator");
+if (!operator || operator === "ADM") location.href = "/login.html";
+document.getElementById("operator").textContent = operator;
 
-async function callCar(){msg.textContent="";let m=model.value.trim(),p=plate.value.trim();if(!m)return msg.textContent="Informe o modelo do veículo.";if(p&&p.length!==2&&p.length!==7)return msg.textContent="A placa livre.";let r=await fetch("/api/calls",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({operator:who,model:m,plate:p})}),d=await r.json();if(d.ok){msg.textContent="Chamado enviado!";model.value="";plate.value="";model.focus();loadMine()}else msg.textContent=d.message}
+document.getElementById("call").onclick = async () => {
+  const model = document.getElementById("model").value.trim();
+  const plate = document.getElementById("plate").value.trim();
+  const status = document.getElementById("status");
+  if (!model || !plate) {
+    status.textContent = "Informe o modelo e a placa.";
+    status.className = "status error";
+    return;
+  }
+  const btn = document.getElementById("call");
+  btn.disabled = true;
+  const r = await fetch("/api/calls", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({model, plate, operator})
+  });
+  const data = await r.json();
+  btn.disabled = false;
+  if (!r.ok) {
+    status.textContent = data.message || "Não foi possível chamar.";
+    status.className = "status error";
+    return;
+  }
+  status.textContent = "Carro chamado com sucesso!";
+  status.className = "status success";
+  document.getElementById("model").value = "";
+  document.getElementById("plate").value = "";
+  document.getElementById("model").focus();
+};
 
-io().on("new-call",c=>{if(c.operator===who)loadMine()});loadMine();
-
-</script></body></html> 
-
+document.getElementById("logout").onclick = () => {
+  sessionStorage.clear();
+  location.href = "/login.html";
+};
+</script>
+</body>
+</html>
