@@ -76,6 +76,7 @@
     font-weight:900;font-size:clamp(28px,3.2vw,58px);
     color:#f5f7fb;text-transform:uppercase;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+    display:none;
   }
   .model-plate{
     display:none;
@@ -92,6 +93,7 @@
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
   }
   .plate{
+    display:none;
     font-weight:900;font-size:clamp(52px,8vw,150px);
     letter-spacing:1px;color:#ff5a60;
     text-shadow:0 0 16px rgba(255,55,65,.55),0 0 38px rgba(255,30,40,.22);
@@ -341,11 +343,9 @@ function render(list){
     const model = c.model || c.modelo || 'MODELO NÃO INFORMADO';
     const plate = c.plate || c.placa || 'SEM PLACA';
     const key = String(c.id ?? c._id ?? c.createdAt ?? c.created_at ?? (model + '|' + plate));
-    if(!queueRunning){
-      currentModel.textContent = model;
-      currentPlate.textContent = plate;
-      currentOrigin.textContent = 'ORIGEM: ' + (c.operator || c.operador || c.origin || c.origem || '—');
-    }
+    currentModel.textContent = model;
+    currentPlate.textContent = plate;
+    currentOrigin.textContent = 'ORIGEM: ' + (c.operator || c.operador || c.origin || c.origem || '—');
 
     if(!initialized){
       lastCallKey = key;
@@ -354,7 +354,7 @@ function render(list){
       lastCallKey = key;
       notifyCall(model, plate);
     }
-  }else if(!queueRunning){
+  }else{
     currentModel.textContent = 'AGUARDANDO';
     currentPlate.textContent = 'PLACA';
     currentOrigin.textContent = 'ORIGEM: —';
