@@ -156,13 +156,14 @@ app.get("/api/jump/descobrir-estabelecimento", async (req, res) => {
   }
 });
 // JUMP PARK - VEÍCULOS PAGOS E AINDA NO PÁTIO
+// JUMP PARK - VEÍCULOS PAGOS E AINDA NO PÁTIO
 app.get("/api/jump/veiculos-pagos", async (req, res) => {
   try {
     const integrationId = process.env.JUMP_INTEGRATION_ID;
-    const token = process.env.JUMP_TOKEN;
-    const establishmentId = "26329";
+    const establishmentId = process.env.JUMP_ESTABLISHMENT_ID;
+    const token = process.env.JUMP_ACCESS_TOKEN;
 
-    if (!integrationId || !token) {
+    if (!integrationId || !establishmentId || !token) {
       return res.status(500).json({
         ok: false,
         message: "Credenciais da Jump não configuradas."
@@ -171,7 +172,8 @@ app.get("/api/jump/veiculos-pagos", async (req, res) => {
 
     const url =
       `https://new-web.jumpparkapi.com.br/api/${integrationId}` +
-      `/public/establishment/${establishmentId}/serviceorders/export/json` +
+      `/public/establishment/${establishmentId}` +
+      `/serviceorders/export/json` +
       `?financialSituation=3&operationSituation=1`;
 
     const resposta = await fetch(url, {
@@ -200,16 +202,10 @@ app.get("/api/jump/veiculos-pagos", async (req, res) => {
 
     res.status(500).json({
       ok: false,
-      message: "Erro ao consultar a Jump Park."
+      message: "Erro ao consultar a Jump.",
+      erro: erro.message
     });
   }
-});
-app.get("/api/jump/debug", (req, res) => {
-  res.json({
-    integrationId: !!process.env.JUMP_INTEGRATION_ID,
-    establishmentId: !!process.env.JUMP_ESTABLISHMENT_ID,
-    accessToken: !!process.env.JUMP_ACCESS_TOKEN
-  });
 });
 app.listen(PORT, "0.0.0.0", () => {
   console.log("ZANE PARK funcionando na porta " + PORT);
