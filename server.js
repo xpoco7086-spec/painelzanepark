@@ -155,6 +155,55 @@ app.get("/api/jump/descobrir-estabelecimento", async (req, res) => {
     });
   }
 });
+// JUMP PARK - VEÍCULOS PAGOS E AINDA NO PÁTIO
+app.get("/api/jump/veiculos-pagos", async (req, res) => {
+  try {
+    const integrationId = process.env.JUMP_INTEGRATION_ID;
+    const token = process.env.JUMP_TOKEN;
+    const establishmentId = "26329";
+
+    if (!integrationId || !token) {
+      return res.status(500).json({
+        ok: false,
+        message: "Credenciais da Jump não configuradas."
+      });
+    }
+
+    const url =
+      `https://new-web.jumpparkapi.com.br/api/${integrationId}` +
+      `/public/establishment/${establishmentId}/serviceorders/export/json` +
+      `?financialSituation=3&operationSituation=1`;
+
+    const resposta = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json"
+      }
+    });
+
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      return res.status(resposta.status).json({
+        ok: false,
+        jump: dados
+      });
+    }
+
+    res.json({
+      ok: true,
+      dados
+    });
+
+  } catch (erro) {
+    console.error("Erro Jump:", erro);
+
+    res.status(500).json({
+      ok: false,
+      message: "Erro ao consultar a Jump Park."
+    });
+  }
+});
 app.listen(PORT, "0.0.0.0", () => {
   console.log("ZANE PARK funcionando na porta " + PORT);
 });
