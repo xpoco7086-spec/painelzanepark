@@ -173,8 +173,10 @@ app.get("/api/jump/veiculos-pagos", async (req, res) => {
     const url =
       `https://new-web.jumpparkapi.com.br/api/${integrationId}` +
       `/public/establishment/${establishmentId}` +
-      `/serviceorders/export/json` +
-      ``?financialSituation=3&operationSituation=2`;
+      `/serviceorders/export/json` 
+      +
+      
+      `?financialSituation=3&operationSituation=2`;
 
     const resposta = await fetch(url, {
       headers: {
