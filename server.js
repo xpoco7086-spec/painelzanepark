@@ -204,6 +204,13 @@ app.get("/api/jump/veiculos-pagos", async (req, res) => {
     });
   }
 });
+app.get("/api/jump/debug", (req, res) => {
+  res.json({
+    integrationId: !!process.env.JUMP_INTEGRATION_ID,
+    establishmentId: !!process.env.JUMP_ESTABLISHMENT_ID,
+    accessToken: !!process.env.JUMP_ACCESS_TOKEN
+  });
+});
 app.listen(PORT, "0.0.0.0", () => {
   console.log("ZANE PARK funcionando na porta " + PORT);
 });
