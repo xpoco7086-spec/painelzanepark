@@ -7,17 +7,24 @@ const PORT = process.env.PORT || 10000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, ".")));
 
+// OPERADORES
 const operators = {
   "Bali": "1234",
   "Pergoletta": "1234",
+  "Pérgoletta": "1234",
   "Cão Veio": "1234",
-  "Estacionamento": "1234"
+  "Estacionamento": "1234",
+  "Estatura": "1234"
 };
 
 let calls = [];
 let nextId = 1;
 
-// LOGIN
+
+// ========================================
+// LOGIN DOS OPERADORES
+// ========================================
+
 app.post("/api/login", (req, res) => {
   const { operator, password } = req.body || {};
 
@@ -34,11 +41,15 @@ app.post("/api/login", (req, res) => {
   });
 });
 
+
+// ========================================
 // LISTAR CHAMADAS
+// ========================================
+
 app.get("/api/calls", (req, res) => {
   const operator = String(req.query.operator || "").trim();
 
-  let data = operator
+  const data = operator
     ? calls.filter(c => c.operator === operator)
     : calls;
 
@@ -48,7 +59,11 @@ app.get("/api/calls", (req, res) => {
   });
 });
 
+
+// ========================================
 // CRIAR CHAMADA
+// ========================================
+
 app.post("/api/calls", (req, res) => {
   const operator = String(req.body?.operator || "").trim();
   const model = String(req.body?.model || "").trim();
@@ -84,79 +99,13 @@ app.post("/api/calls", (req, res) => {
     call
   });
 });
-// DESCOBRIR ID DO ESTABELECIMENTO NA JUMP
-app.get("/api/jump/descobrir-estabelecimento", async (req, res) => {
-  try {
-    const integrationId = process.env.JUMP_INTEGRATION_ID;
-    const token = process.env.JUMP_ACCESS_TOKEN;
 
-    if (!integrationId || !token) {
-      return res.status(500).json({
-        ok: false,
-        erro: "Credenciais da Jump não configuradas no Render."
-      });
-    }
 
-    const url =
-      `https://new-web.jumpparkapi.com.br/api/${integrationId}/public/vehicles/damage/export/json`;
+// ========================================
+// JUMP PARK
+// VEÍCULOS PAGOS E FORA DO PÁTIO
+// ========================================
 
-    const resposta = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json"
-      }
-    });
-
-    const dados = await resposta.json();
-
-    if (!resposta.ok) {
-      return res.status(resposta.status).json({
-        ok: false,
-        status: resposta.status,
-        respostaJump: dados
-      });
-    }
-
-    const encontrados = [];
-
-    function procurar(obj) {
-      if (!obj || typeof obj !== "object") return;
-
-      if (obj.establishmentId) {
-        encontrados.push({
-          establishmentId: obj.establishmentId,
-          establishmentName: obj.establishmentName || null
-        });
-      }
-
-      Object.values(obj).forEach(procurar);
-    }
-
-    procurar(dados);
-
-    const unicos = [
-      ...new Map(
-        encontrados.map(item => [
-          String(item.establishmentId),
-          item
-        ])
-      ).values()
-    ];
-
-    res.json({
-      ok: true,
-      estabelecimentos: unicos
-    });
-
-  } catch (erro) {
-    res.status(500).json({
-      ok: false,
-      erro: erro.message
-    });
-  }
-});
-// JUMP PARK - VEÍCULOS PAGOS E AINDA NO PÁTIO
-// JUMP PARK - VEÍCULOS PAGOS E AINDA NO PÁTIO
 app.get("/api/jump/veiculos-pagos", async (req, res) => {
   try {
     const integrationId = process.env.JUMP_INTEGRATION_ID;
@@ -173,12 +122,11 @@ app.get("/api/jump/veiculos-pagos", async (req, res) => {
     const url =
       `https://new-web.jumpparkapi.com.br/api/${integrationId}` +
       `/public/establishment/${establishmentId}` +
-      `/serviceorders/export/json` 
-      +
-      
+      `/serviceorders/export/json` +
       `?financialSituation=3&operationSituation=2`;
 
     const resposta = await fetch(url, {
+      method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/json"
@@ -201,13 +149,14 @@ app.get("/api/jump/veiculos-pagos", async (req, res) => {
     const veiculos = lista.map(carro => ({
       serviceOrderId: carro.serviceOrderId,
       codigo: carro.serviceOrderCode,
-      placa: carro.plate,
-      modelo: carro.vehicleModel,
-      cor: carro.vehicleColor,
-      cliente: carro.clientName,
-      entrada: carro.entryDateTime,
-      situacao: carro.operationSituationName,
-      financeiro: carro.financialSituationName
+      placa: carro.plate || "",
+      modelo: carro.vehicleModel || "",
+      cor: carro.vehicleColor || "",
+      cliente: carro.clientName || "",
+      entrada: carro.entryDateTime || "",
+      saida: carro.exitDateTime || "",
+      situacao: carro.operationSituationName || "",
+      financeiro: carro.financialSituationName || ""
     }));
 
     res.json({
@@ -226,6 +175,25 @@ app.get("/api/jump/veiculos-pagos", async (req, res) => {
     });
   }
 });
+
+
+// ========================================
+// TESTE DAS VARIÁVEIS DA JUMP
+// NÃO MOSTRA O TOKEN
+// ========================================
+
+app.get("/api/jump/debug", (req, res) => {
+  res.json({
+    integrationId: !!process.env.JUMP_INTEGRATION_ID,
+    establishmentId: !!process.env.JUMP_ESTABLISHMENT_ID,
+    accessToken: !!process.env.JUMP_ACCESS_TOKEN
+  });
+});
+
+
+// ========================================
+// INICIAR SERVIDOR
+// ========================================
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("ZANE PARK funcionando na porta " + PORT);
