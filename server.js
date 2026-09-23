@@ -192,9 +192,26 @@ app.get("/api/jump/veiculos-pagos", async (req, res) => {
       });
     }
 
+    const lista = Array.isArray(dados?.data?.content)
+      ? dados.data.content
+      : [];
+
+    const veiculos = lista.map(carro => ({
+      serviceOrderId: carro.serviceOrderId,
+      codigo: carro.serviceOrderCode,
+      placa: carro.plate,
+      modelo: carro.vehicleModel,
+      cor: carro.vehicleColor,
+      cliente: carro.clientName,
+      entrada: carro.entryDateTime,
+      situacao: carro.operationSituationName,
+      financeiro: carro.financialSituationName
+    }));
+
     res.json({
       ok: true,
-      dados
+      total: veiculos.length,
+      veiculos
     });
 
   } catch (erro) {
@@ -207,6 +224,7 @@ app.get("/api/jump/veiculos-pagos", async (req, res) => {
     });
   }
 });
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log("ZANE PARK funcionando na porta " + PORT);
 });
