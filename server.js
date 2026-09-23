@@ -84,7 +84,77 @@ app.post("/api/calls", (req, res) => {
     call
   });
 });
+// DESCOBRIR ID DO ESTABELECIMENTO NA JUMP
+app.get("/api/jump/descobrir-estabelecimento", async (req, res) => {
+  try {
+    const integrationId = process.env.JUMP_INTEGRATION_ID;
+    const token = process.env.JUMP_ACCESS_TOKEN;
 
+    if (!integrationId || !token) {
+      return res.status(500).json({
+        ok: false,
+        erro: "Credenciais da Jump não configuradas no Render."
+      });
+    }
+
+    const url =
+      `https://new-web.jumpparkapi.com.br/api/${integrationId}/public/vehicles/damage/export/json`;
+
+    const resposta = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json"
+      }
+    });
+
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      return res.status(resposta.status).json({
+        ok: false,
+        status: resposta.status,
+        respostaJump: dados
+      });
+    }
+
+    const encontrados = [];
+
+    function procurar(obj) {
+      if (!obj || typeof obj !== "object") return;
+
+      if (obj.establishmentId) {
+        encontrados.push({
+          establishmentId: obj.establishmentId,
+          establishmentName: obj.establishmentName || null
+        });
+      }
+
+      Object.values(obj).forEach(procurar);
+    }
+
+    procurar(dados);
+
+    const unicos = [
+      ...new Map(
+        encontrados.map(item => [
+          String(item.establishmentId),
+          item
+        ])
+      ).values()
+    ];
+
+    res.json({
+      ok: true,
+      estabelecimentos: unicos
+    });
+
+  } catch (erro) {
+    res.status(500).json({
+      ok: false,
+      erro: erro.message
+    });
+  }
+});
 app.listen(PORT, "0.0.0.0", () => {
   console.log("ZANE PARK funcionando na porta " + PORT);
 });
