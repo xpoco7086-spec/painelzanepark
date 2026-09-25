@@ -120,12 +120,14 @@ app.get("/api/jump/veiculos-fora", async (req, res) => {
     }
 
     const hoje = new Date().toISOString().slice(0, 10);
+const inicio = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    
 
     const url =
       `https://new-web.jumpparkapi.com.br/api/${integrationId}` +
       `/public/establishment/${establishmentId}` +
       `/serviceorders/export/json` +
-      `?startDate=${hoje}` +
+      `?startDate=${início}` +
       `&endDate=${hoje}` +
       `&operationSituation=2`;
 
