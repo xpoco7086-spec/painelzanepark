@@ -212,3 +212,687 @@ html,body{
   font-size:clamp(13px,1.35vw,21px);
   font-weight:900;
   color:#ff6670;
+}
+
+.card .origin-small{
+  font-size:clamp(10px,1vw,15px);
+  color:#d6dde8;
+}
+
+.bottom{
+  height:8%;
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  font-weight:800;
+}
+
+.wifi{
+  font-size:24px;
+  color:#19e58a;
+}
+
+.sound-btn{
+  position:fixed;
+  right:2vw;
+  bottom:2vh;
+  z-index:20;
+  border:2px solid var(--red);
+  background:#111a28;
+  color:#fff;
+  border-radius:10px;
+  padding:9px 14px;
+  font-weight:900;
+}
+
+.sound-btn.on{
+  display:none;
+}
+
+@media(max-width:900px){
+  html,body{overflow:auto}
+
+  .screen{
+    min-height:100vh;
+    height:auto;
+  }
+
+  .content{
+    grid-template-columns:1fr;
+    gap:28px;
+  }
+
+  .current-box{
+    min-height:280px;
+  }
+
+  .grid{
+    min-height:420px;
+  }
+}
+
+@media(max-width:600px){
+  .grid{
+    grid-template-columns:repeat(2,1fr);
+    grid-template-rows:repeat(4,1fr);
+  }
+
+  .plate{font-size:14vw}
+  .origin{font-size:7vw}
+}
+</style>
+</head>
+
+<body>
+
+<div class="screen">
+
+<header class="top">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <h1>ZANE PARK</h1>
+  </div>
+
+  <div class="clock">
+    <div class="time" id="time">--:--</div>
+    <div class="date" id="date">--/--/----</div>
+  </div>
+</header>
+
+<main class="content">
+
+<section class="current">
+
+  <div class="current-title">
+    SOLICITAÇÃO ATUAL
+  </div>
+
+  <div class="current-box">
+    <div class="current-info">
+      <div class="model-current" id="currentModel">
+        AGUARDANDO
+      </div>
+
+      <div class="plate" id="currentPlate">
+        PLACA
+      </div>
+    </div>
+  </div>
+
+  <div class="origin" id="currentOrigin">
+    ORIGEM: —
+  </div>
+
+</section>
+
+<section class="history">
+
+  <div class="history-title">
+    ÚLTIMAS SOLICITAÇÕES
+  </div>
+
+  <div class="grid" id="recent"></div>
+
+</section>
+
+</main>
+
+<footer class="bottom">
+  <div>
+    <span class="wifi">◉</span>
+    <span>●</span>
+  </div>
+
+  <div>
+    SISTEMA OPERACIONAL - V2.4
+  </div>
+</footer>
+
+</div>
+
+<button id="soundBtn" class="sound-btn">
+🔊 ATIVAR SOM
+</button>
+
+<script>
+const recent = document.getElementById('recent');
+const currentModel = document.getElementById('currentModel');
+const currentPlate = document.getElementById('currentPlate');
+const currentOrigin = document.getElementById('currentOrigin');
+const soundBtn = document.getElementById('soundBtn');
+
+let audioCtx = null;
+let soundEnabled = false;
+
+let operatorInitialized = false;
+let jumpInitialized = false;
+
+let operatorCalls = [];
+let jumpCalls = [];
+
+const callQueue = [];
+const seenOperator = new Set();
+const seenJump = new Set();
+
+let queueRunning = false;
+
+function enableSound(){
+  try{
+    audioCtx =
+      audioCtx ||
+      new (window.AudioContext || window.webkitAudioContext)();
+
+    if(audioCtx.state === 'suspended'){
+      audioCtx.resume();
+    }
+
+    soundEnabled = true;
+    soundBtn.classList.add('on');
+  }catch(e){}
+}
+
+soundBtn.addEventListener('click', enableSound);
+
+document.addEventListener(
+  'click',
+  () => {
+    if(!soundEnabled){
+      enableSound();
+    }
+  },
+  {once:true}
+);
+
+function beep(){
+  if(!soundEnabled || !audioCtx) return;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = 'sine';
+  osc.frequency.value = 880;
+
+  gain.gain.setValueAtTime(
+    0.0001,
+    audioCtx.currentTime
+  );
+
+  gain.gain.exponentialRampToValueAtTime(
+    1,
+    audioCtx.currentTime + 0.018
+  );
+
+  gain.gain.exponentialRampToValueAtTime(
+    0.0001,
+    audioCtx.currentTime + 0.30
+  );
+
+  osc.connect(gain).connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.40);
+}
+
+function announce(model, plate){
+  if(
+    !soundEnabled ||
+    !('speechSynthesis' in window)
+  ) return;
+
+  speechSynthesis.cancel();
+
+  const texto =
+    `Saindo, veículo ${model}, placa ${plate}`;
+
+  const u =
+    new SpeechSynthesisUtterance(texto);
+
+  u.lang = 'pt-BR';
+  u.rate = 0.9;
+  u.pitch = 1;
+  u.volume = 1;
+
+  setTimeout(
+    () => speechSynthesis.speak(u),
+    700
+  );
+}
+
+function notifyCall(model, plate){
+  if(!soundEnabled) return;
+
+  beep();
+  setTimeout(beep, 250);
+  setTimeout(beep, 500);
+
+  announce(model, plate);
+}
+
+function esc(v){
+  return String(v ?? '').replace(
+    /[&<>"']/g,
+    c => ({
+      '&':'&amp;',
+      '<':'&lt;',
+      '>':'&gt;',
+      '"':'&quot;',
+      "'":'&#39;'
+    }[c])
+  );
+}
+
+function formatTime(v){
+  if(!v) return '--:--';
+
+  const d = new Date(v);
+
+  if(!Number.isNaN(d.getTime())){
+    return d.toLocaleTimeString(
+      'pt-BR',
+      {
+        hour:'2-digit',
+        minute:'2-digit'
+      }
+    );
+  }
+
+  return String(v).slice(0,5);
+}
+
+function sleep(ms){
+  return new Promise(
+    resolve => setTimeout(resolve, ms)
+  );
+}
+
+function operatorKey(c){
+  return 'op-' +
+    String(
+      c?.id ??
+      c?._id ??
+      c?.createdAt ??
+      `${c?.model}|${c?.plate}|${c?.operator}`
+    );
+}
+
+function jumpKey(c){
+  return 'jump-' +
+    String(
+      c?.serviceOrderId ??
+      c?.serviceOrderCode ??
+      `${c?.plate}|${c?.createdAt}`
+    );
+}
+
+function toTime(c){
+  const valor =
+    c?.createdAt ||
+    c?.created_at ||
+    c?.saida ||
+    c?.time ||
+    '';
+
+  const tempo = new Date(valor).getTime();
+
+  return Number.isNaN(tempo)
+    ? 0
+    : tempo;
+}
+
+function mergedCalls(){
+  return [
+    ...operatorCalls,
+    ...jumpCalls
+  ]
+  .sort(
+    (a,b) => toTime(b) - toTime(a)
+  )
+  .slice(0,8);
+}
+
+function renderCurrent(c){
+  if(!c){
+    currentModel.textContent = 'AGUARDANDO';
+    currentPlate.textContent = 'PLACA';
+    currentOrigin.textContent = 'ORIGEM: —';
+    return;
+  }
+
+  currentModel.textContent =
+    c.model ||
+    c.modelo ||
+    'MODELO NÃO INFORMADO';
+
+  currentPlate.textContent =
+    c.plate ||
+    c.placa ||
+    'SEM PLACA';
+
+  currentOrigin.textContent =
+    'ORIGEM: ' +
+    (
+      c.operator ||
+      c.origin ||
+      c.origem ||
+      '—'
+    );
+}
+
+function renderHistory(){
+  const calls = mergedCalls();
+
+  recent.innerHTML =
+    Array.from(
+      {length:8},
+      (_,i) => {
+        const c = calls[i];
+
+        if(!c){
+          return `
+            <div
+              class="card"
+              style="opacity:.16">
+            </div>
+          `;
+        }
+
+        const origin =
+          c.operator ||
+          c.origin ||
+          c.origem ||
+          '—';
+
+        const plate =
+          c.plate ||
+          c.placa ||
+          'SEM PLACA';
+
+        const model =
+          c.model ||
+          c.modelo ||
+          'MODELO NÃO INFORMADO';
+
+        return `
+          <div class="card">
+
+            <div class="time">
+              ${esc(
+                formatTime(
+                  c.createdAt ||
+                  c.created_at ||
+                  c.saida ||
+                  c.time
+                )
+              )}
+            </div>
+
+            <div class="model-small">
+              ${esc(model)}
+            </div>
+
+            <div class="plate-small">
+              ${esc(plate)}
+            </div>
+
+            <div class="origin-small">
+              Origem: ${esc(origin)}
+            </div>
+
+          </div>
+        `;
+      }
+    ).join('');
+
+  if(!queueRunning){
+    renderCurrent(
+      calls[0] || null
+    );
+  }
+}
+
+async function processCallQueue(){
+  if(queueRunning) return;
+
+  queueRunning = true;
+
+  while(callQueue.length){
+    const c = callQueue.shift();
+
+    renderCurrent(c);
+
+    notifyCall(
+      c.model ||
+      c.modelo ||
+      'veículo',
+
+      c.plate ||
+      c.placa ||
+      ''
+    );
+
+    await sleep(10000);
+  }
+
+  queueRunning = false;
+
+  renderHistory();
+}
+
+function queueFresh(items){
+  if(!items.length) return;
+
+  items
+    .sort(
+      (a,b) => toTime(a) - toTime(b)
+    )
+    .forEach(
+      c => callQueue.push(c)
+    );
+
+  processCallQueue();
+}
+
+async function load(){
+  try{
+    const r =
+      await fetch(
+        '/api/calls',
+        {cache:'no-store'}
+      );
+
+    const data = await r.json();
+
+    const calls =
+      Array.isArray(data.calls)
+        ? data.calls
+        : (
+            Array.isArray(data)
+              ? data
+              : []
+          );
+
+    operatorCalls = calls;
+
+    if(!operatorInitialized){
+      calls.forEach(
+        c =>
+          seenOperator.add(
+            operatorKey(c)
+          )
+      );
+
+      operatorInitialized = true;
+    }
+    else{
+      const fresh = [];
+
+      for(const c of calls){
+        const key = operatorKey(c);
+
+        if(!seenOperator.has(key)){
+          seenOperator.add(key);
+          fresh.push(c);
+        }
+      }
+
+      queueFresh(fresh);
+    }
+
+    renderHistory();
+  }
+  catch(e){
+    console.error(
+      'Erro chamadas:',
+      e
+    );
+  }
+}
+
+async function loadJumpOutside(){
+  try{
+    const r =
+      await fetch(
+        '/api/jump/veiculos-fora',
+        {cache:'no-store'}
+      );
+
+    const data = await r.json();
+
+    if(
+      !data.ok ||
+      !Array.isArray(data.veiculos)
+    ){
+      return;
+    }
+
+    const mapped =
+      data.veiculos
+        .map(carro => ({
+          id:
+            'jump-' +
+            (
+              carro.serviceOrderId ||
+              carro.serviceOrderCode ||
+              `${carro.placa}-${carro.saida}`
+            ),
+
+          serviceOrderId:
+            carro.serviceOrderId,
+
+          serviceOrderCode:
+            carro.serviceOrderCode,
+
+          model:
+            carro.modelo ||
+            'VEÍCULO',
+
+          plate:
+            carro.placa ||
+            'SEM PLACA',
+
+          operator:'BALI',
+          origin:'BALI',
+
+          createdAt:
+            carro.saida ||
+            new Date().toISOString(),
+
+          saida:
+            carro.saida || ''
+        }))
+
+        .sort(
+          (a,b) => toTime(b) - toTime(a)
+        );
+
+    /*
+      Na primeira consulta, os veículos antigos
+      são carregados sem disparar o anúncio.
+    */
+
+    if(!jumpInitialized){
+      mapped.forEach(
+        c =>
+          seenJump.add(
+            jumpKey(c)
+          )
+      );
+
+      jumpCalls = mapped.slice(0,8);
+
+      jumpInitialized = true;
+
+      renderHistory();
+
+      return;
+    }
+
+    const fresh = [];
+
+    for(const c of mapped){
+      const key = jumpKey(c);
+
+      if(!seenJump.has(key)){
+        seenJump.add(key);
+        fresh.push(c);
+      }
+    }
+
+    jumpCalls = mapped.slice(0,8);
+
+    renderHistory();
+
+    queueFresh(fresh);
+  }
+  catch(e){
+    console.error(
+      'Erro BALI:',
+      e
+    );
+  }
+}
+
+function clock(){
+  const d = new Date();
+
+  document
+    .getElementById('time')
+    .textContent =
+      d.toLocaleTimeString(
+        'pt-BR',
+        {
+          hour:'2-digit',
+          minute:'2-digit'
+        }
+      );
+
+  document
+    .getElementById('date')
+    .textContent =
+      d.toLocaleDateString('pt-BR');
+}
+
+clock();
+
+setInterval(
+  clock,
+  1000
+);
+
+load();
+
+setInterval(
+  load,
+  1500
+);
+
+loadJumpOutside();
+
+setInterval(
+  loadJumpOutside,
+  15000
+);
+</script>
+
+</body>
+</html>
