@@ -396,12 +396,28 @@ async function load(){
 
     if(!data.ok || !Array.isArray(data.veiculos)) return;
 
-    console.log('Veículos fora Jump:', data.veiculos);
+    const area = document.getElementById('jumpOutside');
+    if(!area) return;
+
+    area.innerHTML = '';
+
+    data.veiculos.slice(0, 8).forEach(carro => {
+      const item = document.createElement('div');
+      item.className = 'card';
+
+      item.innerHTML = `
+        <div class="car">${carro.modelo || 'VEÍCULO'}</div>
+        <div class="plate">${carro.placa || 'SEM PLACA'}</div>
+        <div class="origin">Fora do pátio</div>
+      `;
+
+      area.appendChild(item);
+    });
+
   }catch(e){
     console.error('Erro Jump:', e);
   }
 }
-
 function clock(){
   const d=new Date();
   document.getElementById('time').textContent=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
