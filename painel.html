@@ -384,6 +384,18 @@ async function load(){
   }catch(e){
     render([]);
   }
+} 
+ async function loadJumpOutside(){
+  try{
+    const r = await fetch('/api/jump/veiculos-fora', {cache:'no-store'});
+    const data = await r.json();
+
+    if(!data.ok || !Array.isArray(data.veiculos)) return;
+
+    console.log('Veículos fora Jump:', data.veiculos);
+  }catch(e){
+    console.error('Erro Jump:', e);
+  }
 }
 
 function clock(){
@@ -393,8 +405,12 @@ function clock(){
 }
 clock();
 setInterval(clock,1000);
+
+ loadJumpOutside();
+setInterval(loadJumpOutside,15000);
 load();
 setInterval(load,1500);
+ 
 </script>
 </body>
 </html>
