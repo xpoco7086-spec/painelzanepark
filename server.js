@@ -127,7 +127,7 @@ const inicio = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slic
       `https://new-web.jumpparkapi.com.br/api/${integrationId}` +
       `/public/establishment/${establishmentId}` +
       `/serviceorders/export/json` +
-      `?startDate=${início}` +
+      `?startDate=${inicio}` +
       `&endDate=${hoje}` +
       `&operationSituation=2`;
 
