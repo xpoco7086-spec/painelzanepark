@@ -122,7 +122,7 @@ app.get("/api/jump/veiculos-fora", async (req, res) => {
     const hoje = new Date().toISOString().slice(0, 10);
 
     const url =
-      `https://new-web.jumpparkapi.com/api/${integrationId}` +
+      `https://new-web.jumpparkapi.com.br/api/${integrationId}` +
       `/public/establishment/${establishmentId}` +
       `/serviceorders/export/json` +
       `?startDate=${hoje}` +
