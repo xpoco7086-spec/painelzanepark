@@ -4,433 +4,211 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ZANE PARK — Painel</title>
+
 <style>
-  *{box-sizing:border-box}
-  :root{
-    --bg:#0b111b;
-    --panel:#111a28;
-    --card:#182334;
-    --red:#ff1f2d;
-    --red2:#ff3a43;
-    --text:#f5f7fb;
-    --muted:#b9c2cf;
-  }
-  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
-  body{min-height:100vh}
-  .screen{
-    width:100vw;height:100vh;min-height:560px;
-    padding:2.2vh 2.5vw 1.8vh;
-    background:
-      radial-gradient(circle at 75% 20%,rgba(255,40,50,.08),transparent 25%),
-      linear-gradient(135deg,#101927 0%,#090e17 100%);
-    display:flex;flex-direction:column;
-  }
+*{box-sizing:border-box}
 
-  .top{
-    display:flex;align-items:flex-start;justify-content:space-between;
-    height:12%;
-  }
-  .brand{display:flex;align-items:center;gap:12px}
-  .brand-mark{
-    width:40px;height:30px;position:relative;
-  }
-  .brand-mark:before,.brand-mark:after{
-    content:"";position:absolute;left:0;width:34px;height:12px;
-    background:var(--red);border-radius:50% 10% 50% 10%;
-    transform:skewX(-28deg) rotate(-8deg);
-  }
-  .brand-mark:before{top:2px}
-  .brand-mark:after{bottom:2px;transform:skewX(28deg) rotate(8deg)}
-  .brand h1{margin:0;font-size:clamp(24px,3vw,44px);font-weight:900;letter-spacing:-1px}
-  .clock{text-align:right;font-weight:900}
-  .clock .time{font-size:clamp(28px,3.8vw,58px);line-height:.9}
-  .clock .date{margin-top:8px;font-size:clamp(12px,1.3vw,20px)}
-
-  .content{
-    flex:1;min-height:0;
-    display:grid;grid-template-columns:minmax(0,58%) minmax(0,42%);gap:2vw;
-    align-items:stretch;
-  }
-
-  .current{min-width:0;display:flex;flex-direction:column;grid-column:1;grid-row:1}
-  .current-title,.history-title{
-    font-weight:900;font-size:clamp(22px,2.4vw,40px);
-    letter-spacing:-.5px;
-  }
-  .current-title{
-    background:linear-gradient(90deg,#ff202d,#e71b27);
-    padding:12px 20px;border-radius:13px 13px 0 0;
-  }
-  .current-box{
-    border:3px solid #d9222c;border-top:0;border-radius:0 0 14px 14px;
-    background:linear-gradient(180deg,#0c121c,#101827);
-    min-height:39vh;display:flex;align-items:center;justify-content:center;
-    padding:2vh 2vw;
-    box-shadow:inset 0 0 45px rgba(255,30,40,.06);
-  }
-  .current-info{
-    width:100%;text-align:center;
-    display:flex;flex-direction:column;align-items:center;gap:1vh;
-  }
-  .model-current{
-    font-weight:900;font-size:clamp(28px,3.2vw,58px);
-    color:#f5f7fb;text-transform:uppercase;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
-  }
-  .model-plate{
-    display:none;
-  }
-  .model-current{
-    font-weight:900;font-size:clamp(28px,3.2vw,58px);
-    color:#f5f7fb;text-transform:uppercase;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
-  }
-  .plate{
-    font-weight:900;font-size:clamp(52px,8vw,150px);
-    color:#ff5a60;text-transform:uppercase;
-    text-shadow:0 0 16px rgba(255,55,65,.55),0 0 38px rgba(255,30,40,.22);
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
-  }
-  .plate{
-    font-weight:900;font-size:clamp(52px,8vw,150px);
-    letter-spacing:1px;color:#ff5a60;
-    text-shadow:0 0 16px rgba(255,55,65,.55),0 0 38px rgba(255,30,40,.22);
-    white-space:nowrap;
-    text-align:center;
-  }
-  .origin{
-    font-weight:900;font-size:clamp(28px,3.6vw,64px);
-    margin:2vh 0 0 2vw;
-    text-transform:uppercase;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  }
-  .origin span{font-weight:900}
-
-  .history{min-width:0;display:flex;flex-direction:column;grid-column:2;grid-row:1}
-  .history-title{margin:4px 0 14px}
-  .grid{
-    flex:1;min-height:0;
-    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
-    grid-template-rows:repeat(2,minmax(0,1fr));
-    gap:12px;
-  }
-  .card{
-    min-width:0;min-height:0;
-    background:linear-gradient(145deg,#1b2738,#151f2d);
-    border-radius:10px;
-    border-bottom:6px solid var(--red);
-    padding:12px 10px;
-    display:flex;flex-direction:column;justify-content:space-between;
-    overflow:hidden;
-  }
-  .card .time{font-size:clamp(13px,1.4vw,22px);font-weight:800;color:#dce2eb}
-  .card .operator{font-size:clamp(11px,1.15vw,18px);font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .card .model-small{font-size:clamp(13px,1.35vw,21px);font-weight:900;color:#f5f7fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .card .plate-small{font-size:clamp(13px,1.35vw,21px);font-weight:900;color:#ff6670;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .card .origin-small{font-size:clamp(10px,1vw,15px);color:#d6dde8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-  .bottom{
-    height:8%;display:flex;align-items:flex-end;justify-content:space-between;
-    color:#f1f3f7;font-size:clamp(12px,1.2vw,19px);font-weight:800
-  }
-  .status{display:flex;gap:12px;align-items:center}
-  .wifi{font-size:24px;color:#19e58a}
-  .version{letter-spacing:.3px}
-  .sound-btn{
-    position:fixed;right:2vw;bottom:2vh;z-index:20;
-    border:2px solid var(--red);background:#111a28;color:#fff;
-    border-radius:10px;padding:9px 14px;font-weight:900;
-    cursor:pointer;font-size:14px;
-  }
-  .sound-btn.on{background:var(--red);display:none}
-
-  @media(max-width:900px){
-    html,body{overflow:auto}
-    .screen{min-height:100vh;height:auto}
-    .content{grid-template-columns:1fr;gap:28px}
-    .current-box{min-height:280px}
-    .grid{min-height:420px}
-  }
-  @media(max-width:600px){
-    .grid{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(4,1fr)}
-    .plate{font-size:14vw}
-    .origin{font-size:7vw}
-  }
-</style>
-</head>
-<body>
-<div class="screen">
-  <header class="top">
-    <div class="brand">
-      <div class="brand-mark" aria-hidden="true"></div>
-      <h1>ZANE PARK</h1>
-    </div>
-    <div class="clock">
-      <div class="time" id="time">--:--</div>
-      <div class="date" id="date">--/--/----</div>
-    </div>
-  </header>
-
-  <main class="content">
-    <section class="current">
-      <div class="current-title">SOLICITAÇÃO ATUAL</div>
-      <div class="current-box">
-        <div class="current-info">
-          <div class="model-current" id="currentModel">AGUARDANDO</div>
-          <div class="plate" id="currentPlate">PLACA</div>
-        </div>
-      </div>
-      <div class="origin" id="currentOrigin">ORIGEM: —</div>
-    </section>
-
-    <section class="history">
-      <div class="history-title">ÚLTIMAS SOLICITAÇÕES</div>
-      <div class="grid" id="recent"></div>
-    </section>
-  </main>
-<section class="jump-fora">
-  <div class="history-title">VEÍCULOS FORA — JUMP PARK</div>
-  <div class="grid" id="jumpOutside"></div>
- 
-   </section>
- <footer class="bottom">
-    <div class="status"><span class="wifi">◉</span><span>●</span></div>
-    <div class="version">SISTEMA OPERACIONAL&nbsp; - &nbsp;V2.3</div>
- </footer>
-</div>
-<button id="soundBtn" class="sound-btn">🔊 ATIVAR SOM</button>
-
-<script>
-const recent = document.getElementById('recent');
-const currentModel = document.getElementById('currentModel');
-const currentPlate = document.getElementById('currentPlate');
-const currentOrigin = document.getElementById('currentOrigin');
-const soundBtn = document.getElementById('soundBtn');
-let audioCtx = null;
-let soundEnabled = false;
-let initialized = false;
-let lastCallKey = null;
-
-function enableSound(){
-  try{
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    if(audioCtx.state === 'suspended') audioCtx.resume();
-    soundEnabled = true;
-    soundBtn.classList.add('on');
-  }catch(e){}
+:root{
+  --bg:#0b111b;
+  --panel:#111a28;
+  --card:#182334;
+  --red:#ff1f2d;
+  --text:#f5f7fb;
 }
 
-soundBtn.addEventListener('click', enableSound);
-document.addEventListener('click', () => {
-  if(!soundEnabled) enableSound();
-}, {once:true});
-
-function beep(){
-  if(!soundEnabled || !audioCtx) return;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = 'sine';
-  osc.frequency.value = 880;
-  gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(20.0, audioCtx.currentTime + 0.018);
-  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.30);
-  osc.connect(gain).connect(audioCtx.destination);
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.40);
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
 }
 
-function announce(model, plate){
-  if(!soundEnabled || !('speechSynthesis' in window)) return;
-  speechSynthesis.cancel();
-  const text = `Saindo, veículo ${model}, placa ${plate}`;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'pt-BR';
-  u.rate = 0.9;
-  u.pitch = 1;
-  u.volume = 10;
-  setTimeout(() => speechSynthesis.speak(u), 700);
+.screen{
+  width:100vw;
+  height:100vh;
+  min-height:560px;
+  padding:2.2vh 2.5vw 1.8vh;
+  background:
+    radial-gradient(circle at 75% 20%,rgba(255,40,50,.08),transparent 25%),
+    linear-gradient(135deg,#101927 0%,#090e17 100%);
+  display:flex;
+  flex-direction:column;
 }
 
-function notifyCall(model, plate){
-  if(!soundEnabled) return;
-  beep();
-  setTimeout(beep, 250);
-  setTimeout(beep, 500);
-  announce(model, plate);
+.top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  height:12%;
 }
 
-function esc(v){
-  return String(v ?? '').replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
 }
 
-function formatTime(v){
-  if(!v) return '--:--';
-  const d = new Date(v);
-  if(!Number.isNaN(d.getTime()))
-    return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  return String(v).slice(0,5);
+.brand-mark{
+  width:40px;
+  height:30px;
+  position:relative;
 }
 
-
-// Fila de chamadas: quando chegam várias solicitações, uma é anunciada
-// por vez, com 10 segundos entre uma chamada e a próxima.
-const callQueue = [];
-const seenCallKeys = new Set();
-let queueRunning = false;
-let initialCallsLoaded = false;
-
-function callKey(c){
-  return String(
-    c?.id ?? c?._id ?? c?.createdAt ?? c?.created_at ??
-    `${c?.model ?? c?.modelo ?? ''}|${c?.plate ?? c?.placa ?? ''}|${c?.operator ?? c?.origin ?? ''}|${c?.time ?? ''}`
-  );
+.brand-mark:before,
+.brand-mark:after{
+  content:"";
+  position:absolute;
+  left:0;
+  width:34px;
+  height:12px;
+  background:var(--red);
+  border-radius:50% 10% 50% 10%;
+  transform:skewX(-28deg) rotate(-8deg);
 }
 
-function sleep(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
+.brand-mark:before{top:2px}
 
-async function processCallQueue(){
-  if(queueRunning) return;
-  queueRunning = true;
-  while(callQueue.length){
-    const c = callQueue.shift();
-    renderSingleCurrent(c);
-    notifyCall(c.model || c.modelo || c.name || 'veículo', c.plate || c.placa || '');
-    await sleep(10000);
-  }
-  queueRunning = false;
+.brand-mark:after{
+  bottom:2px;
+  transform:skewX(28deg) rotate(8deg);
 }
 
-function enqueueNewCalls(calls){
-  if(!Array.isArray(calls)) return;
-
-  // Não anuncia o histórico quando o painel é aberto.
-  if(!initialCallsLoaded){
-    calls.forEach(c => seenCallKeys.add(callKey(c)));
-    initialCallsLoaded = true;
-    return;
-  }
-
-  const fresh = [];
-  for(const c of calls){
-    const key = callKey(c);
-    if(!seenCallKeys.has(key)){
-      seenCallKeys.add(key);
-      fresh.push(c);
-    }
-  }
-
-  // API costuma trazer do mais novo para o mais antigo.
-  fresh.reverse().forEach(c => callQueue.push(c));
-  if(fresh.length) processCallQueue();
+.brand h1{
+  margin:0;
+  font-size:clamp(24px,3vw,44px);
+  font-weight:900;
 }
 
-function renderSingleCurrent(c){
-  const model = c?.model || c?.modelo || 'MODELO NÃO INFORMADO';
-  const plate = c?.plate || c?.placa || 'PLACA NÃO INFORMADA';
-  const origin = c?.operator || c?.origin || c?.local || 'ORIGEM NÃO INFORMADA';
-
-  if(currentModel) currentModel.textContent = model;
-  if(currentPlate) currentPlate.textContent = plate;
-  const originEl = document.getElementById('currentOrigin');
-  if(originEl) originEl.textContent = origin;
+.clock{
+  text-align:right;
+  font-weight:900;
 }
 
-function render(list){
-  const calls = Array.isArray(list) ? list : [];
-
-  if(calls.length){
-    const c = calls[0];
-    const model = c.model || c.modelo || 'MODELO NÃO INFORMADO';
-    const plate = c.plate || c.placa || 'SEM PLACA';
-    const key = String(c.id ?? c._id ?? c.createdAt ?? c.created_at ?? (model + '|' + plate));
-    currentModel.textContent = model;
-    currentPlate.textContent = plate;
-    currentOrigin.textContent = 'ORIGEM: ' + (c.operator || c.operador || c.origin || c.origem || '—');
-
-    if(!initialized){
-      lastCallKey = key;
-      initialized = true;
-    }else if(key !== lastCallKey){
-      lastCallKey = key;
-      notifyCall(model, plate);
-    }
-  }else{
-    currentModel.textContent = 'AGUARDANDO';
-    currentPlate.textContent = 'PLACA';
-    currentOrigin.textContent = 'ORIGEM: —';
-  }
-
-  recent.innerHTML = Array.from({length:8},(_,i)=>{
-    const c=calls[i];
-    if(!c) return '<div class="card" style="opacity:.16"></div>';
-    const operator=c.operator || c.operador || c.origin || c.origem || '—';
-    const plate=c.plate || c.placa || 'SEM PLACA';
-    const model=c.model || c.modelo || 'MODELO NÃO INFORMADO';
-    return `
-      <div class="card">
-        <div class="time">${esc(formatTime(c.createdAt || c.created_at || c.time || c.hora))}</div>
-        <div class="model-small">${esc(model)}</div>
-        <div class="plate-small">${esc(plate)}</div>
-        <div class="origin-small">Origem: ${esc(operator)}</div>
-      </div>`;
-  }).join('');
+.clock .time{
+  font-size:clamp(28px,3.8vw,58px);
 }
 
-async function load(){
-  try{
-    const r=await fetch('/api/calls',{cache:'no-store'});
-    const data=await r.json();
-    const calls = data.calls || data || [];
-    render(calls);
-    enqueueNewCalls(calls);
-  }catch(e){
-    render([]);
-  }
-} 
- async function loadJumpOutside(){
-  try{
-    const r = await fetch('/api/jump/veiculos-fora', {cache:'no-store'});
-    const data = await r.json();
-
-    if(!data.ok || !Array.isArray(data.veiculos)) return;
-
-    const area = document.getElementById('jumpOutside');
-    if(!area) return;
-
-    area.innerHTML = '';
-
-    data.veiculos.slice(0, 8).forEach(carro => {
-      const item = document.createElement('div');
-      item.className = 'card';
-
-      item.innerHTML = `
-        <div class="car">${carro.modelo || 'VEÍCULO'}</div>
-        <div class="plate">${carro.placa || 'SEM PLACA'}</div>
-        <div class="origin">Fora do pátio</div>
-      `;
-
-      area.appendChild(item);
-    });
-
-  }catch(e){
-    console.error('Erro Jump:', e);
-  }
+.clock .date{
+  margin-top:8px;
+  font-size:clamp(12px,1.3vw,20px);
 }
-function clock(){
-  const d=new Date();
-  document.getElementById('time').textContent=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  document.getElementById('date').textContent=d.toLocaleDateString('pt-BR');
-}
-clock();
-setInterval(clock,1000);
 
- loadJumpOutside();
-setInterval(loadJumpOutside,15000);
-load();
-setInterval(load,1500);
- 
-</script>
-</body>
-</html>
+.content{
+  flex:1;
+  min-height:0;
+  display:grid;
+  grid-template-columns:minmax(0,58%) minmax(0,42%);
+  gap:2vw;
+}
+
+.current{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+}
+
+.current-title,
+.history-title{
+  font-weight:900;
+  font-size:clamp(22px,2.4vw,40px);
+}
+
+.current-title{
+  background:linear-gradient(90deg,#ff202d,#e71b27);
+  padding:12px 20px;
+  border-radius:13px 13px 0 0;
+}
+
+.current-box{
+  border:3px solid #d9222c;
+  border-top:0;
+  border-radius:0 0 14px 14px;
+  background:linear-gradient(180deg,#0c121c,#101827);
+  min-height:39vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:2vh 2vw;
+}
+
+.current-info{
+  width:100%;
+  text-align:center;
+}
+
+.model-current{
+  font-weight:900;
+  font-size:clamp(28px,3.2vw,58px);
+  text-transform:uppercase;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.plate{
+  font-weight:900;
+  font-size:clamp(52px,8vw,150px);
+  color:#ff5a60;
+  text-transform:uppercase;
+  text-shadow:
+    0 0 16px rgba(255,55,65,.55),
+    0 0 38px rgba(255,30,40,.22);
+}
+
+.origin{
+  font-weight:900;
+  font-size:clamp(28px,3.6vw,64px);
+  margin:2vh 0 0 2vw;
+  text-transform:uppercase;
+}
+
+.history{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+}
+
+.history-title{
+  margin:4px 0 14px;
+}
+
+.grid{
+  flex:1;
+  min-height:0;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-rows:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+
+.card{
+  min-width:0;
+  min-height:0;
+  background:linear-gradient(145deg,#1b2738,#151f2d);
+  border-radius:10px;
+  border-bottom:6px solid var(--red);
+  padding:12px 10px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  overflow:hidden;
+}
+
+.card .time{
+  font-size:clamp(13px,1.4vw,22px);
+  font-weight:800;
+}
+
+.card .model-small{
+  font-size:clamp(13px,1.35vw,21px);
+  font-weight:900;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.card .plate-small{
+  font-size:clamp(13px,1.35vw,21px);
+  font-weight:900;
+  color:#ff6670;
