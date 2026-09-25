@@ -102,7 +102,7 @@ app.post("/api/calls", (req, res) => {
 
 
 // ==========================================
-// JUMP PARK - VEÍCULOS FORA
+// Veículo BALI
 // operationSituation = 2 (Fora do pátio)
 // ==========================================
 
