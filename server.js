@@ -101,12 +101,12 @@ app.post("/api/calls", (req, res) => {
 });
 
 
-// ========================================
-// JUMP PARK
-// VEÍCULOS PAGOS E FORA DO PÁTIO
-// ========================================
+// ==========================================
+// JUMP PARK - VEÍCULOS FORA
+// operationSituation = 2 (Fora do pátio)
+// ==========================================
 
-app.get("/api/jump/veiculos-pagos", async (req, res) => {
+app.get("/api/jump/veiculos-fora", async (req, res) => {
   try {
     const integrationId = process.env.JUMP_INTEGRATION_ID;
     const establishmentId = process.env.JUMP_ESTABLISHMENT_ID;
@@ -115,15 +115,19 @@ app.get("/api/jump/veiculos-pagos", async (req, res) => {
     if (!integrationId || !establishmentId || !token) {
       return res.status(500).json({
         ok: false,
-        message: "Credenciais da Jump não configuradas."
+        message: "Credenciais da Jump não configuradas"
       });
     }
 
+    const hoje = new Date().toISOString().slice(0, 10);
+
     const url =
-      `https://new-web.jumpparkapi.com.br/api/${integrationId}` +
+      `https://new-web.jumpparkapi.com/api/${integrationId}` +
       `/public/establishment/${establishmentId}` +
       `/serviceorders/export/json` +
-      `?financialSituation=3&operationSituation=2`;
+      `?startDate=${hoje}` +
+      `&endDate=${hoje}` +
+      `&operationSituation=2`;
 
     const resposta = await fetch(url, {
       method: "GET",
@@ -146,17 +150,16 @@ app.get("/api/jump/veiculos-pagos", async (req, res) => {
       ? dados.data.content
       : [];
 
-    const veiculos = lista.map(carro => ({
+    const veiculos = lista.map((carro) => ({
       serviceOrderId: carro.serviceOrderId,
-      codigo: carro.serviceOrderCode,
+      serviceOrderCode: carro.serviceOrderCode,
       placa: carro.plate || "",
       modelo: carro.vehicleModel || "",
       cor: carro.vehicleColor || "",
       cliente: carro.clientName || "",
       entrada: carro.entryDateTime || "",
       saida: carro.exitDateTime || "",
-      situacao: carro.operationSituationName || "",
-      financeiro: carro.financialSituationName || ""
+      situacao: carro.operationSituationName || ""
     }));
 
     res.json({
@@ -170,7 +173,7 @@ app.get("/api/jump/veiculos-pagos", async (req, res) => {
 
     res.status(500).json({
       ok: false,
-      message: "Erro ao consultar a Jump.",
+      message: "Erro ao consultar veículos fora na Jump",
       erro: erro.message
     });
   }
