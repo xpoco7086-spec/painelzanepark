@@ -1,71 +1,421 @@
+
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Zane Park — Central de Rádio</title>
 <style>
-:root{color-scheme:dark}body{font:16px Arial,sans-serif;background:#0c1018;color:#fff;max-width:760px;margin:32px auto;padding:0 18px}h1{color:#ff3945}section{background:#192231;border-radius:12px;padding:18px;margin:16px 0}label{display:block;margin:12px 0 5px}input,select,button{font:inherit;padding:11px;border-radius:8px;border:1px solid #667080;background:#101824;color:white}input,select{box-sizing:border-box;width:100%}button{cursor:pointer;background:#c91f2c;border:0;margin:10px 6px 0 0}button:disabled{opacity:.5;cursor:not-allowed}.muted{color:#bfc9d9}#log{white-space:pre-wrap;max-height:260px;overflow:auto;font-size:14px}strong{color:#f7d274}
-</style></head><body>
+:root{color-scheme:dark}
+body{font:16px Arial,sans-serif;background:#0c1018;color:#fff;max-width:760px;margin:32px auto;padding:0 18px}
+h1{color:#ff3945}
+section{background:#192231;border-radius:12px;padding:18px;margin:16px 0}
+label{display:block;margin:12px 0 5px}
+input,select,button{font:inherit;padding:11px;border-radius:8px;border:1px solid #667080;background:#101824;color:white}
+input,select{box-sizing:border-box;width:100%}
+button{cursor:pointer;background:#c91f2c;border:0;margin:10px 6px 0 0}
+button:disabled{opacity:.5;cursor:not-allowed}
+.muted{color:#bfc9d9}
+#log{white-space:pre-wrap;max-height:260px;overflow:auto;font-size:14px}
+strong{color:#f7d274}
+</style>
+</head>
+<body>
+
 <h1>ZANE PARK — CENTRAL DE RÁDIO</h1>
-<p class="muted">Recebe chamadas dos operadores e fala duas vezes no notebook. O rádio precisa de uma interface PTT configurada separadamente.</p>
+
+<p class="muted">
+Recebe chamadas dos operadores, toca dois bipes,
+aguarda 3 segundos e anuncia o veículo duas vezes.
+A transmissão pelo rádio exige uma interface PTT
+configurada separadamente.
+</p>
+
 <section>
-<label for="server">Endereço do painel</label><input id="server" value="https://painelzanepark.onrender.com" spellcheck="false">
-<label for="key">Chave RADIO_KEY (não compartilhe)</label><input id="key" type="password" autocomplete="off">
-<label for="voice">Voz (escolha uma masculina PT-BR, se disponível)</label><select id="voice"><option>Carregando vozes...</option></select>
-<label for="rate">Velocidade</label><select id="rate"><option value="0.85">0,85</option><option value="0.95" selected>0,95 — natural</option><option value="1">1,00</option></select>
-<div><button id="start">Iniciar central</button><button id="stop" disabled>Parar central</button><button id="test">Testar voz</button></div>
+<label for="server">Endereço do painel</label>
+<input id="server"
+value="https://painelzanepark.onrender.com"
+spellcheck="false">
+
+<label for="key">Chave RADIO_KEY (não compartilhe)</label>
+<input id="key" type="password" autocomplete="off">
+
+<label for="voice">Voz em português</label>
+<select id="voice">
+<option>Carregando vozes...</option>
+</select>
+
+<label for="rate">Velocidade</label>
+<select id="rate">
+<option value="0.85">0,85</option>
+<option value="0.95" selected>0,95 — natural</option>
+<option value="1">1,00</option>
+</select>
+
+<div>
+<button id="start">Iniciar central</button>
+<button id="stop" disabled>Parar central</button>
+<button id="test">Testar bipes e voz</button>
+</div>
+
 <p id="status" role="status">Desligada</p>
 </section>
-<section><h2>Fila e últimas chamadas</h2><p id="queue">Nenhuma chamada aguardando.</p><div id="log"></div></section>
+
+<section>
+<h2>Fila e últimas chamadas</h2>
+<p id="queue">Nenhuma chamada aguardando.</p>
+<div id="log"></div>
+</section>
+
 <script>
 const $ = id => document.getElementById(id);
-let running=false, lastId=0, queue=[], speaking=false, voices=[], timer=null, generation=0;
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+let running = false;
+let lastId = 0;
+let queue = [];
+let speaking = false;
+let voices = [];
+let timer = null;
+let generation = 0;
+let audioContext = null;
+let testRunning = false;
+
+const sleep = ms =>
+  new Promise(resolve => setTimeout(resolve, ms));
+
 function refreshVoices(){
-  voices=speechSynthesis.getVoices(); const select=$('voice'), previous=select.value;
+  voices = speechSynthesis.getVoices();
+
+  const select = $('voice');
+  const previous = select.value;
+
   select.replaceChildren();
-  const pt=voices.map((v,i)=>({v,i})).filter(x=>x.v.lang.toLowerCase().startsWith('pt'));
-  for(const {v,i} of pt){const o=document.createElement('option');o.value=String(i);o.textContent=`${v.name} (${v.lang})`;select.append(o)}
-  if(!pt.length){const o=document.createElement('option');o.textContent='Nenhuma voz em português encontrada';select.append(o)}
-  if([...select.options].some(o=>o.value===previous))select.value=previous;
-  else {const google=[...select.options].find(o=>/google/i.test(o.textContent));if(google)select.value=google.value}
+
+  const pt = voices
+    .map((v,i)=>({v,i}))
+    .filter(x=>x.v.lang.toLowerCase().startsWith('pt'));
+
+  for(const {v,i} of pt){
+    const option = document.createElement('option');
+    option.value = String(i);
+    option.textContent = `${v.name} (${v.lang})`;
+    select.append(option);
+  }
+
+  if(!pt.length){
+    const option = document.createElement('option');
+    option.textContent = 'Nenhuma voz em português encontrada';
+    select.append(option);
+  }
+
+  if([...select.options].some(o=>o.value===previous)){
+    select.value = previous;
+  } else {
+    const google = [...select.options]
+      .find(o=>/google/i.test(o.textContent));
+
+    if(google) select.value = google.value;
+  }
 }
-refreshVoices();speechSynthesis.onvoiceschanged=refreshVoices;
+
+refreshVoices();
+speechSynthesis.onvoiceschanged = refreshVoices;
+
 function plateSpoken(plate){
- const chars=String(plate||'').replace(/[^\p{L}\p{N}]/gu,'').slice(-4).toUpperCase();
- return [...chars].join(' ');
+  const chars = String(plate||'')
+    .replace(/[^\p{L}\p{N}]/gu,'')
+    .slice(-4)
+    .toUpperCase();
+
+  return [...chars].join(' ');
 }
-function sentence(c){return `Pátio, saindo ${c.model}, ${plateSpoken(c.plate)}, ${c.origin||c.operator}.`;}
-function say(text,gen){return new Promise(resolve=>{
- if(gen!==generation)return resolve();
- const u=new SpeechSynthesisUtterance(text);u.lang='pt-BR';u.rate=Number($('rate').value);u.pitch=1;
- const selected=voices[Number($('voice').value)];if(selected)u.voice=selected;
- u.onend=resolve;u.onerror=resolve;speechSynthesis.speak(u);
-});}
-function log(line){const p=document.createElement('p');p.textContent=`${new Date().toLocaleTimeString('pt-BR')} — ${line}`;$('log').prepend(p);}
-function showQueue(){$('queue').textContent=queue.length?queue.map(c=>`${c.origin}: ${c.model} ${c.plate}`).join(' | '):'Nenhuma chamada aguardando.';}
-async function processQueue(){if(speaking)return;speaking=true;const gen=generation;
- try{while(running && queue.length && gen===generation){const c=queue.shift();showQueue();log('Anunciando: '+sentence(c));
-   await say(sentence(c),gen);if(!running||gen!==generation)break;
-   await sleep(2500);if(!running||gen!==generation)break;
-   await say(sentence(c),gen);log('Duas chamadas concluídas: '+c.model+' '+c.plate);
- }}finally{speaking=false;if(running&&queue.length)processQueue();}
+
+function spokenOrigin(origin){
+  return String(origin||'')
+    .replace(/cão veio/gi,'Cão Vêio');
 }
-async function poll(){if(!running)return;
- try{const base=$('server').value.trim().replace(/\/$/,'');
-   const resp=await fetch(`${base}/api/radio/calls?after=${lastId}`,{headers:{'x-radio-key':$('key').value},cache:'no-store'});
-   const data=await resp.json();if(!resp.ok||!data.ok)throw Error(data.message||'Falha HTTP '+resp.status);
-   for(const c of data.calls){if(c.id>lastId){lastId=c.id;queue.push(c);log('Recebido: '+c.model+' '+c.plate+' — '+c.origin);}}
-   showQueue();$('status').textContent='Conectada — aguardando veículos';processQueue();
- }catch(e){$('status').textContent='Erro: '+e.message;}
- if(running)timer=setTimeout(poll,1000);
+
+function sentence(c){
+  const origin = spokenOrigin(c.origin||c.operator||'');
+  return `Pátio, saindo ${c.model}, ${plateSpoken(c.plate)}, ${origin}.`;
 }
+
+function say(text,gen){
+  return new Promise(resolve=>{
+    if(gen!==generation) return resolve();
+
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'pt-BR';
+    u.rate = Number($('rate').value);
+    u.pitch = 1;
+    u.volume = 1;
+
+    const selected = voices[Number($('voice').value)];
+    if(selected) u.voice = selected;
+
+    u.onend = resolve;
+    u.onerror = resolve;
+
+    speechSynthesis.speak(u);
+  });
+}
+
+function getAudioContext(){
+  if(!audioContext){
+    audioContext = new (
+      window.AudioContext || window.webkitAudioContext
+    )();
+  }
+  return audioContext;
+}
+
+async function beep(gen){
+  if(gen!==generation) return;
+
+  const ctx = getAudioContext();
+  await ctx.resume();
+
+  if(gen!==generation) return;
+
+  const oscillator = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  oscillator.type = 'sine';
+  oscillator.frequency.value = 950;
+
+  gain.gain.setValueAtTime(0.0001,ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(
+    0.35,ctx.currentTime+0.02
+  );
+  gain.gain.setValueAtTime(
+    0.35,ctx.currentTime+0.15
+  );
+  gain.gain.exponentialRampToValueAtTime(
+    0.0001,ctx.currentTime+0.22
+  );
+
+  oscillator.connect(gain);
+  gain.connect(ctx.destination);
+
+  oscillator.start();
+  oscillator.stop(ctx.currentTime+0.23);
+
+  await sleep(250);
+}
+
+async function twoBeeps(gen){
+  if(gen!==generation) return;
+  await beep(gen);
+
+  if(gen!==generation) return;
+  await sleep(180);
+
+  if(gen!==generation) return;
+  await beep(gen);
+}
+
+function log(line){
+  const p = document.createElement('p');
+  p.textContent =
+    `${new Date().toLocaleTimeString('pt-BR')} — ${line}`;
+
+  $('log').prepend(p);
+}
+
+function showQueue(){
+  $('queue').textContent = queue.length
+    ? queue.map(c=>
+        `${c.origin||c.operator||''}: ${c.model} ${c.plate}`
+      ).join(' | ')
+    : 'Nenhuma chamada aguardando.';
+}
+
+async function announce(c,gen){
+  log('Dois bipes: '+c.model+' '+c.plate);
+
+  await twoBeeps(gen);
+  if(gen!==generation) return;
+
+  log('Aguardando 3 segundos');
+  await sleep(3000);
+  if(gen!==generation) return;
+
+  log('Anunciando: '+sentence(c));
+  await say(sentence(c),gen);
+  if(gen!==generation) return;
+
+  await sleep(2500);
+  if(gen!==generation) return;
+
+  await say(sentence(c),gen);
+  if(gen!==generation) return;
+
+  log('Duas chamadas concluídas: '+c.model+' '+c.plate);
+}
+
+async function processQueue(){
+  if(speaking || !running) return;
+
+  speaking = true;
+  const gen = generation;
+
+  try{
+    while(running && queue.length && gen===generation){
+      const c = queue.shift();
+      showQueue();
+
+      await announce(c,gen);
+    }
+  }catch(e){
+    log('Erro de áudio: '+e.message);
+  }finally{
+    speaking = false;
+
+    if(running && queue.length && gen===generation){
+      processQueue();
+    }
+  }
+}
+
+async function poll(){
+  if(!running) return;
+
+  try{
+    const base = $('server').value.trim().replace(/\/$/,'');
+
+    const resp = await fetch(
+      `${base}/api/radio/calls?after=${lastId}`,
+      {
+        headers:{'x-radio-key':$('key').value},
+        cache:'no-store'
+      }
+    );
+
+    const data = await resp.json();
+
+    if(!resp.ok || !data.ok){
+      throw Error(data.message||'Falha HTTP '+resp.status);
+    }
+
+    for(const c of data.calls){
+      if(c.id>lastId){
+        lastId=c.id;
+        queue.push(c);
+
+        log(
+          'Recebido: '+c.model+' '+c.plate+
+          ' — '+(c.origin||c.operator||'')
+        );
+      }
+    }
+
+    showQueue();
+    $('status').textContent =
+      'Conectada — aguardando veículos';
+
+    processQueue();
+
+  }catch(e){
+    $('status').textContent='Erro: '+e.message;
+  }
+
+  if(running){
+    timer=setTimeout(poll,1000);
+  }
+}
+
 $('start').onclick=async()=>{
- if(!$('key').value.trim())return alert('Informe a RADIO_KEY configurada no Render.');
- running=true;generation++;queue=[];lastId=0;showQueue();$('start').disabled=true;$('stop').disabled=false;
- // Marca as chamadas existentes como lidas para não anunciar o histórico ao ligar.
- try{const base=$('server').value.trim().replace(/\/$/,'');const r=await fetch(`${base}/api/radio/calls?after=0`,{headers:{'x-radio-key':$('key').value},cache:'no-store'});const d=await r.json();if(!r.ok||!d.ok)throw Error(d.message||'Erro de conexão');
-   if(!running)return;lastId=d.latestId||0;log('Central ligada. Aguardando novas chamadas.');poll();
- }catch(e){$('status').textContent='Erro: '+e.message;running=false;$('start').disabled=false;$('stop').disabled=true;}
+  if(!$('key').value.trim()){
+    return alert('Informe a RADIO_KEY configurada no Render.');
+  }
+
+  try{
+    await getAudioContext().resume();
+  }catch(e){
+    log('Áudio: '+e.message);
+  }
+
+  running=true;
+  generation++;
+  queue=[];
+  lastId=0;
+  showQueue();
+
+  $('start').disabled=true;
+  $('stop').disabled=false;
+
+  try{
+    const base=$('server').value.trim().replace(/\/$/,'');
+
+    const r=await fetch(
+      `${base}/api/radio/calls?after=0`,
+      {
+        headers:{'x-radio-key':$('key').value},
+        cache:'no-store'
+      }
+    );
+
+    const d=await r.json();
+
+    if(!r.ok||!d.ok){
+      throw Error(d.message||'Erro de conexão');
+    }
+
+    if(!running)return;
+
+    lastId=d.latestId||0;
+
+    log('Central ligada. Aguardando novas chamadas.');
+    poll();
+
+  }catch(e){
+    $('status').textContent='Erro: '+e.message;
+    running=false;
+    $('start').disabled=false;
+    $('stop').disabled=true;
+  }
 };
-$('stop').onclick=()=>{running=false;generation++;clearTimeout(timer);speechSynthesis.cancel();queue=[];showQueue();$('status').textContent='Desligada';$('start').disabled=false;$('stop').disabled=true;};
-$('test').onclick=()=>{speechSynthesis.cancel();const gen=generation;say('Pátio, saindo Civic, três B nove cinco, Bali.',gen);};
-</script></body></html>
+
+$('stop').onclick=()=>{
+  running=false;
+  generation++;
+  clearTimeout(timer);
+  speechSynthesis.cancel();
+
+  queue=[];
+  showQueue();
+
+  $('status').textContent='Desligada';
+  $('start').disabled=false;
+  $('stop').disabled=true;
+};
+
+$('test').onclick=async()=>{
+  if(testRunning || speaking){
+    return alert('Aguarde o áudio atual terminar.');
+  }
+
+  testRunning=true;
+  $('test').disabled=true;
+
+  const gen=generation;
+
+  const c={
+    model:'Civic',
+    plate:'ABC3B95',
+    origin:'Cão Veio'
+  };
+
+  try{
+    await getAudioContext().resume();
+    await announce(c,gen);
+  }catch(e){
+    log('Erro no teste: '+e.message);
+  }finally{
+    testRunning=false;
+    $('test').disabled=false;
+  }
+};
+</script>
+</body>
+</html>
