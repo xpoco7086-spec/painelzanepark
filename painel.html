@@ -5,383 +5,57 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ZANE PARK — Painel</title>
-
 <style>
 *{box-sizing:border-box}
-
-:root{
-  --bg:#050507;
-  --red:#ff1028;
-  --text:#f5f7fb;
-}
-
-html,body{
-  margin:0;
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  background:var(--bg);
-  color:var(--text);
-  font-family:Arial,Helvetica,sans-serif;
-}
-
-.screen{
-  position:relative;
-  isolation:isolate;
-  width:100vw;
-  height:100vh;
-  min-height:560px;
-  padding:2vh 2.5vw 1.8vh;
-  background:
-    radial-gradient(
-      ellipse at 8% 0%,
-      rgba(220,0,25,.22),
-      transparent 35%
-    ),
-    radial-gradient(
-      ellipse at 60% 100%,
-      rgba(140,0,15,.15),
-      transparent 40%
-    ),
-    linear-gradient(135deg,#09090c,#030305);
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-}
-
-.screen:before{
-  content:"";
-  position:absolute;
-  z-index:-1;
-  width:32vw;
-  height:6px;
-  top:5vh;
-  left:-6vw;
-  background:var(--red);
-  transform:rotate(-35deg);
-  box-shadow:0 0 24px rgba(255,0,30,.5);
-  opacity:.65;
-}
-
-.screen:after{
-  content:"";
-  position:absolute;
-  z-index:-1;
-  width:40vw;
-  height:5px;
-  right:12vw;
-  bottom:7vh;
-  background:var(--red);
-  transform:rotate(-40deg);
-  box-shadow:0 0 25px rgba(255,0,30,.5);
-  opacity:.35;
-}
-
-.top{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  flex:0 0 19%;
-  min-height:0;
-  padding-bottom:1vh;
-}
-
-.brand{
-  display:flex;
-  align-items:center;
-  height:100%;
-}
-
-.brand-logo{
-  display:block;
-  height:100%;
-  max-height:17vh;
-  max-width:38vw;
-  width:auto;
-  object-fit:contain;
-  object-position:left center;
-}
-
-.clock{
-  text-align:right;
-  font-weight:900;
-  padding-right:1vw;
-  border-right:3px solid var(--red);
-}
-
-.clock .time{
-  font-size:clamp(30px,4vw,65px);
-  font-variant-numeric:tabular-nums;
-}
-
-.clock .date{
-  margin-top:6px;
-  font-size:clamp(12px,1.3vw,21px);
-}
-
-.content{
-  flex:1;
-  min-height:0;
-  display:grid;
-  grid-template-columns:minmax(0,61%) minmax(0,39%);
-  gap:1.6vw;
-}
-
-.current{
-  min-width:0;
-  display:flex;
-  flex-direction:column;
-}
-
-.current-title{
-  font-weight:900;
-  font-size:clamp(23px,2.7vw,48px);
-  background:linear-gradient(90deg,#ff1028,#e5001b);
-  padding:12px 18px;
-  border-radius:14px 14px 0 0;
-}
-
-.current-box{
-  border:4px solid var(--red);
-  border-top:0;
-  border-radius:0 0 16px 16px;
-  background:rgba(2,3,6,.88);
-  min-height:43vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:2vh 1vw;
-  box-shadow:0 0 20px rgba(255,0,30,.12);
-}
-
-.current-info{
-  width:100%;
-  text-align:center;
-}
-
-.model-current{
-  font-weight:900;
-  font-size:clamp(28px,3.2vw,60px);
-  text-transform:uppercase;
-  overflow-wrap:anywhere;
-}
-
-.plate{
-  font-weight:900;
-  font-size:clamp(48px,7vw,145px);
-  color:#ff6b83;
-  text-transform:uppercase;
-  overflow-wrap:anywhere;
-  text-shadow:
-    0 0 15px rgba(255,20,50,.6),
-    0 0 38px rgba(255,0,30,.3);
-}
-
-.origin{
-  font-weight:900;
-  font-size:clamp(25px,3.3vw,58px);
-  margin:2vh 0 0 1vw;
-  text-transform:uppercase;
-  overflow-wrap:anywhere;
-}
-
-.history{
-  min-width:0;
-  min-height:0;
-  display:flex;
-  flex-direction:column;
-}
-
-.history-title{
-  font-weight:900;
-  font-size:clamp(20px,2.35vw,40px);
-  margin:4px 0 14px;
-  white-space:nowrap;
-}
-
-.grid{
-  flex:1;
-  min-height:0;
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  grid-template-rows:repeat(2,minmax(0,1fr));
-  gap:9px;
-}
-
-.card{
-  min-width:0;
-  min-height:0;
-  background:linear-gradient(160deg,#101117,#050609);
-  border:1px solid rgba(255,25,50,.7);
-  border-bottom:6px solid var(--red);
-  border-radius:12px;
-  padding:12px 8px;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-  overflow:hidden;
-  box-shadow:0 4px 12px rgba(0,0,0,.35);
-}
-
-.card .time{
-  font-size:clamp(13px,1.35vw,22px);
-  font-weight:900;
-}
-
-.card .model-small{
-  font-size:clamp(12px,1.18vw,20px);
-  font-weight:900;
-  overflow-wrap:anywhere;
-}
-
-.card .plate-small{
-  font-size:clamp(12px,1.25vw,21px);
-  font-weight:900;
-  color:#ff667e;
-  overflow-wrap:anywhere;
-}
-
-.card .origin-small{
-  font-size:clamp(10px,.88vw,15px);
-  color:#e6e6e9;
-  overflow-wrap:anywhere;
-}
-
-.bottom{
-  flex:0 0 6%;
-  display:flex;
-  align-items:flex-end;
-  justify-content:space-between;
-  font-size:clamp(11px,1vw,17px);
-  font-weight:800;
-}
-
-.wifi{
-  font-size:24px;
-  color:#19e58a;
-}
-
-.sound-btn{
-  position:fixed;
-  right:2vw;
-  bottom:2vh;
-  z-index:20;
-  border:2px solid var(--red);
-  background:#11121a;
-  color:white;
-  border-radius:10px;
-  padding:10px 15px;
-  font-weight:900;
-  cursor:pointer;
-}
-
+:root{--bg:#050507;--red:#ff1028;--text:#f5f7fb}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+.screen{position:relative;isolation:isolate;width:100vw;height:100vh;min-height:560px;padding:2vh 2.5vw 1.8vh;background:radial-gradient(ellipse at 8% 0%,rgba(220,0,25,.22),transparent 35%),radial-gradient(ellipse at 60% 100%,rgba(140,0,15,.15),transparent 40%),linear-gradient(135deg,#09090c,#030305);display:flex;flex-direction:column;overflow:hidden}
+.screen:before{content:"";position:absolute;z-index:-1;width:32vw;height:6px;top:5vh;left:-6vw;background:var(--red);transform:rotate(-35deg);box-shadow:0 0 24px rgba(255,0,30,.5);opacity:.65}
+.screen:after{content:"";position:absolute;z-index:-1;width:40vw;height:5px;right:12vw;bottom:7vh;background:var(--red);transform:rotate(-40deg);box-shadow:0 0 25px rgba(255,0,30,.5);opacity:.35}
+.top{display:flex;align-items:center;justify-content:space-between;flex:0 0 19%;min-height:0;padding-bottom:1vh}
+.brand{display:flex;align-items:center;height:100%}
+.brand-logo{display:block;height:100%;max-height:17vh;max-width:38vw;width:auto;object-fit:contain;object-position:left center}
+.clock{text-align:right;font-weight:900;padding-right:1vw;border-right:3px solid var(--red)}
+.clock .time{font-size:clamp(30px,4vw,65px);font-variant-numeric:tabular-nums}
+.clock .date{margin-top:6px;font-size:clamp(12px,1.3vw,21px)}
+.content{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,61%) minmax(0,39%);gap:1.6vw}
+.current{min-width:0;display:flex;flex-direction:column}
+.current-title{font-weight:900;font-size:clamp(23px,2.7vw,48px);background:linear-gradient(90deg,#ff1028,#e5001b);padding:12px 18px;border-radius:14px 14px 0 0}
+.current-box{border:4px solid var(--red);border-top:0;border-radius:0 0 16px 16px;background:rgba(2,3,6,.88);min-height:43vh;display:flex;align-items:center;justify-content:center;padding:2vh 1vw;box-shadow:0 0 20px rgba(255,0,30,.12)}
+.current-info{width:100%;text-align:center}
+.model-current{font-weight:900;font-size:clamp(28px,3.2vw,60px);text-transform:uppercase;overflow-wrap:anywhere}
+.plate{font-weight:900;font-size:clamp(48px,7vw,145px);color:#ff6b83;text-transform:uppercase;overflow-wrap:anywhere;text-shadow:0 0 15px rgba(255,20,50,.6),0 0 38px rgba(255,0,30,.3)}
+.origin{font-weight:900;font-size:clamp(25px,3.3vw,58px);margin:2vh 0 0 1vw;text-transform:uppercase;overflow-wrap:anywhere}
+.history{min-width:0;min-height:0;display:flex;flex-direction:column}
+.history-title{font-weight:900;font-size:clamp(20px,2.35vw,40px);margin:4px 0 14px;white-space:nowrap}
+.grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:9px}
+.card{min-width:0;min-height:0;background:linear-gradient(160deg,#101117,#050609);border:1px solid rgba(255,25,50,.7);border-bottom:6px solid var(--red);border-radius:12px;padding:12px 8px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.35)}
+.card .time{font-size:clamp(13px,1.35vw,22px);font-weight:900}
+.card .model-small{font-size:clamp(12px,1.18vw,20px);font-weight:900;overflow-wrap:anywhere}
+.card .plate-small{font-size:clamp(12px,1.25vw,21px);font-weight:900;color:#ff667e;overflow-wrap:anywhere}
+.card .origin-small{font-size:clamp(10px,.88vw,15px);color:#e6e6e9;overflow-wrap:anywhere}
+.bottom{flex:0 0 6%;display:flex;align-items:flex-end;justify-content:space-between;font-size:clamp(11px,1vw,17px);font-weight:800}
+.wifi{font-size:24px;color:#19e58a}
+.sound-btn{position:fixed;right:2vw;bottom:2vh;z-index:20;border:2px solid var(--red);background:#11121a;color:white;border-radius:10px;padding:10px 15px;font-weight:900;cursor:pointer}
 .sound-btn.on{display:none}
-
-@media(max-width:900px){
-  html,body{overflow:auto}
-  .screen{
-    min-height:100vh;
-    height:auto;
-  }
-  .top{
-    height:125px;
-    flex:0 0 125px;
-  }
-  .brand-logo{
-    max-height:115px;
-    max-width:48vw;
-  }
-  .content{
-    grid-template-columns:1fr;
-    gap:28px;
-  }
-  .current-box{min-height:280px}
-  .grid{min-height:420px}
-}
-
-@media(max-width:600px){
-  .grid{
-    grid-template-columns:repeat(2,1fr);
-    grid-template-rows:repeat(4,1fr);
-  }
-  .history-title{
-    white-space:normal;
-  }
-  .plate{font-size:13vw}
-  .origin{font-size:7vw}
-}
+@media(max-width:900px){html,body{overflow:auto}.screen{min-height:100vh;height:auto}.top{height:125px;flex:0 0 125px}.brand-logo{max-height:115px;max-width:48vw}.content{grid-template-columns:1fr;gap:28px}.current-box{min-height:280px}.grid{min-height:420px}}
+@media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(4,1fr)}.history-title{white-space:normal}.plate{font-size:13vw}.origin{font-size:7vw}}
 </style>
 </head>
-
 <body>
-
 <div class="screen">
-
-<header class="top">
-  <div class="brand">
-    <img
-      class="brand-logo"
-      src="logo-zane.png"
-      alt="ZANE PARK — Estacionamento e Valet"
-    >
-  </div>
-
-  <div class="clock">
-    <div class="time" id="time">--:--</div>
-    <div class="date" id="date">--/--/----</div>
-  </div>
-</header>
-
-<main class="content">
-
-<section class="current">
-  <div class="current-title">
-    SOLICITAÇÃO ATUAL
-  </div>
-
-  <div class="current-box">
-    <div class="current-info">
-      <div class="model-current" id="currentModel">
-        AGUARDANDO
-      </div>
-      <div class="plate" id="currentPlate">
-        PLACA
-      </div>
-    </div>
-  </div>
-
-  <div class="origin" id="currentOrigin">
-    ORIGEM: —
-  </div>
-</section>
-
-<section class="history">
-  <div class="history-title">
-    ÚLTIMAS SOLICITAÇÕES
-  </div>
-  <div class="grid" id="recent"></div>
-</section>
-
-</main>
-
-<footer class="bottom">
-  <div><span class="wifi">◉</span> ●</div>
-  <div>SISTEMA OPERACIONAL - V2.6</div>
-</footer>
-
+<header class="top"><div class="brand"><img class="brand-logo" src="logo-zane.png" alt="ZANE PARK — Estacionamento e Valet"></div><div class="clock"><div class="time" id="time">--:--</div><div class="date" id="date">--/--/----</div></div></header>
+<main class="content"><section class="current"><div class="current-title">SOLICITAÇÃO ATUAL</div><div class="current-box"><div class="current-info"><div class="model-current" id="currentModel">AGUARDANDO</div><div class="plate" id="currentPlate">PLACA</div></div></div><div class="origin" id="currentOrigin">ORIGEM: —</div></section><section class="history"><div class="history-title">ÚLTIMAS SOLICITAÇÕES</div><div class="grid" id="recent"></div></section></main>
+<footer class="bottom"><div><span class="wifi">◉</span> ●</div><div>SISTEMA OPERACIONAL - V2.7</div></footer>
 </div>
-
-<button id="soundBtn" class="sound-btn">
-  🔊 ATIVAR SOM
-</button>
-
+<button id="soundBtn" class="sound-btn">🔊 ATIVAR SOM</button>
 <script>
+'use strict';
 const recent=document.getElementById('recent');
 const currentModel=document.getElementById('currentModel');
 const currentPlate=document.getElementById('currentPlate');
 const currentOrigin=document.getElementById('currentOrigin');
 const soundBtn=document.getElementById('soundBtn');
-
 let audioCtx=null;
 let soundEnabled=false;
 let operatorInitialized=false;
@@ -392,395 +66,205 @@ const callQueue=[];
 const seenOperator=new Set();
 const seenJump=new Set();
 let queueRunning=false;
+let loadingOperator=false;
+let loadingJump=false;
+let activeCall=null;
+let activeSpeech=null;
+let speechTimer=null;
+const DEDUP_WINDOW_MS=120000;
 
 function enableSound(){
   try{
-    audioCtx=audioCtx||
-      new(window.AudioContext||window.webkitAudioContext)();
-
-    if(audioCtx.state==='suspended'){
-      audioCtx.resume();
+    audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended')audioCtx.resume().catch(console.error);
+    if('speechSynthesis' in window){
+      const unlock=new SpeechSynthesisUtterance('');
+      unlock.lang='pt-BR';
+      window.speechSynthesis.speak(unlock);
     }
-
     soundEnabled=true;
     soundBtn.classList.add('on');
-  }catch(e){}
+  }catch(e){console.error('Erro ao ativar som:',e)}
 }
-
 soundBtn.addEventListener('click',enableSound);
 
-document.addEventListener('click',()=>{
-  if(!soundEnabled)enableSound();
-},{once:true});
-
-function beep(){
+function beep(offset=0){
   if(!soundEnabled||!audioCtx)return;
-
-  const agora=audioCtx.currentTime;
+  const t=audioCtx.currentTime+offset;
   const osc=audioCtx.createOscillator();
   const gain=audioCtx.createGain();
   const compressor=audioCtx.createDynamicsCompressor();
-
-  osc.type='square';
-  osc.frequency.value=1100;
-
-  compressor.threshold.value=-12;
-  compressor.knee.value=0;
-  compressor.ratio.value=12;
-  compressor.attack.value=0.003;
-  compressor.release.value=0.15;
-
-  gain.gain.setValueAtTime(0.0001,agora);
-  gain.gain.exponentialRampToValueAtTime(
-    0.9,agora+0.015
-  );
-  gain.gain.setValueAtTime(0.9,agora+0.22);
-  gain.gain.exponentialRampToValueAtTime(
-    0.0001,agora+0.30
-  );
-
-  osc.connect(gain);
-  gain.connect(compressor);
-  compressor.connect(audioCtx.destination);
-
-  osc.start(agora);
-  osc.stop(agora+0.31);
+  osc.type='square';osc.frequency.value=1100;
+  compressor.threshold.value=-12;compressor.knee.value=0;compressor.ratio.value=12;
+  compressor.attack.value=.003;compressor.release.value=.15;
+  gain.gain.setValueAtTime(.0001,t);
+  gain.gain.exponentialRampToValueAtTime(.9,t+.015);
+  gain.gain.setValueAtTime(.9,t+.22);
+  gain.gain.exponentialRampToValueAtTime(.0001,t+.30);
+  osc.connect(gain);gain.connect(compressor);compressor.connect(audioCtx.destination);
+  osc.start(t);osc.stop(t+.31);
 }
-
-function announce(model,plate){
-  if(!soundEnabled||
-     !('speechSynthesis' in window))return;
-
+function announce(model,plate,origin){
+  if(!soundEnabled||!('speechSynthesis' in window))return;
+  clearTimeout(speechTimer);
   speechSynthesis.cancel();
-
-  const texto=`Saindo, veículo ${model}, placa ${plate}`;
-  const u=new SpeechSynthesisUtterance(texto);
-
-  u.lang='pt-BR';
-  u.rate=0.9;
-  u.pitch=1;
-  u.volume=1;
-
-  setTimeout(()=>speechSynthesis.speak(u),700);
+  const texto=`Pátio atenção. Saindo veículo ${model}, placa ${plate}, origem ${origin}.`;
+  const utterance=new SpeechSynthesisUtterance(texto);
+  utterance.lang='pt-BR';utterance.rate=.9;utterance.pitch=1;utterance.volume=1;
+  const voices=speechSynthesis.getVoices();
+  const ptVoice=voices.find(v=>v.lang.toLowerCase()==='pt-br')||voices.find(v=>v.lang.toLowerCase().startsWith('pt'));
+  if(ptVoice)utterance.voice=ptVoice;
+  activeSpeech=utterance;
+  utterance.onend=()=>{if(activeSpeech===utterance)activeSpeech=null};
+  utterance.onerror=e=>{console.warn('Falha na voz:',e.error);if(activeSpeech===utterance)activeSpeech=null};
+  speechTimer=setTimeout(()=>{
+    try{speechSynthesis.resume();speechSynthesis.speak(utterance)}catch(e){console.error('Erro de fala:',e)}
+  },950);
 }
-
-function notifyCall(model,plate){
+function notifyCall(c){
   if(!soundEnabled)return;
-
-  beep();
-  setTimeout(beep,250);
-  setTimeout(beep,500);
-  announce(model,plate);
+  beep(0);beep(.25);beep(.5);
+  announce(c.model||c.modelo||'veículo',c.plate||c.placa||'não informada',getOrigin(c));
 }
-
-function esc(v){
-  return String(v??'').replace(
-    /[&<>"']/g,
-    c=>({
-      '&':'&amp;',
-      '<':'&lt;',
-      '>':'&gt;',
-      '"':'&quot;',
-      "'":'&#39;'
-    }[c])
-  );
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function formatTime(v){if(!v)return '--:--';const d=new Date(v);return Number.isNaN(d.getTime())?String(v).slice(0,5):d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+function getOrigin(c){return String(c?.origin||c?.origem||c?.estabelecimento||c?.operator||'—').trim()}
+function operatorKey(c){return 'op-'+String(c?.id??c?._id??c?.createdAt??`${c?.model}|${c?.plate}|${c?.operator}`)}
+function jumpKey(c){return 'jump-'+getOrigin(c)+'-'+String(c?.serviceOrderId??c?.serviceOrderCode??`${c?.plate}|${c?.createdAt}`)}
+function toTime(c){const v=c?.createdAt||c?.created_at||c?.saida||c?.time||'';const t=new Date(v).getTime();return Number.isNaN(t)?0:t}
+function norm(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'')}
+function normalizedPlate(c){const plate=norm(c.plate||c.placa);return plate==='SEMPLACA'||plate==='PLACA'? '':plate}
+function isSameCall(a,b){
+  const plateA=normalizedPlate(a),plateB=normalizedPlate(b);
+  if(!plateA||!plateB||plateA!==plateB)return false;
+  const originA=norm(getOrigin(a)),originB=norm(getOrigin(b));
+  if(originA!==originB)return false;
+  const ta=toTime(a),tb=toTime(b);
+  return ta>0&&tb>0&&Math.abs(ta-tb)<=DEDUP_WINDOW_MS;
 }
-
-function formatTime(v){
-  if(!v)return '--:--';
-
-  const d=new Date(v);
-
-  if(!Number.isNaN(d.getTime())){
-    return d.toLocaleTimeString('pt-BR',{
-      hour:'2-digit',
-      minute:'2-digit'
-    });
-  }
-
-  return String(v).slice(0,5);
-}
-
-function sleep(ms){
-  return new Promise(resolve=>setTimeout(resolve,ms));
-}
-
-function getOrigin(c){
-  return String(
-    c?.origin||
-    c?.origem||
-    c?.estabelecimento||
-    c?.operator||
-    '—'
-  ).trim();
-}
-
-function operatorKey(c){
-  return 'op-'+String(
-    c?.id??c?._id??c?.createdAt??
-    `${c?.model}|${c?.plate}|${c?.operator}`
-  );
-}
-
-function jumpKey(c){
-  return 'jump-'+getOrigin(c)+'-'+String(
-    c?.serviceOrderId??
-    c?.serviceOrderCode??
-    `${c?.plate}|${c?.createdAt}`
-  );
-}
-
-function toTime(c){
-  const valor=
-    c?.createdAt||
-    c?.created_at||
-    c?.saida||
-    c?.time||'';
-
-  const tempo=new Date(valor).getTime();
-
-  return Number.isNaN(tempo)?0:tempo;
-}
-
 function mergedCalls(){
-  return [...operatorCalls,...jumpCalls]
-    .sort((a,b)=>toTime(b)-toTime(a))
-    .slice(0,8);
-}
-
-function renderCurrent(c){
-  if(!c){
-    currentModel.textContent='AGUARDANDO';
-    currentPlate.textContent='PLACA';
-    currentOrigin.textContent='ORIGEM: —';
-    return;
+  const all=[...operatorCalls,...jumpCalls].sort((a,b)=>toTime(b)-toTime(a));
+  const unique=[];
+  for(const c of all){
+    if(!unique.some(u=>isSameCall(u,c)))unique.push(c);
+    if(unique.length===8)break;
   }
-
-  currentModel.textContent=
-    c.model||c.modelo||'MODELO NÃO INFORMADO';
-
-  currentPlate.textContent=
-    c.plate||c.placa||'SEM PLACA';
-
-  currentOrigin.textContent=
-    'ORIGEM: '+getOrigin(c);
+  return unique;
 }
-
+function renderCurrent(c){
+  if(!c){currentModel.textContent='AGUARDANDO';currentPlate.textContent='PLACA';currentOrigin.textContent='ORIGEM: —';return}
+  currentModel.textContent=c.model||c.modelo||'MODELO NÃO INFORMADO';
+  currentPlate.textContent=c.plate||c.placa||'SEM PLACA';
+  currentOrigin.textContent='ORIGEM: '+getOrigin(c);
+}
 function renderHistory(){
   const calls=mergedCalls();
-
   recent.innerHTML=Array.from({length:8},(_,i)=>{
-    const c=calls[i];
-
-    if(!c){
-      return '<div class="card" style="opacity:.16"></div>';
-    }
-
-    const origin=getOrigin(c);
-    const plate=c.plate||c.placa||'SEM PLACA';
-    const model=c.model||c.modelo||'MODELO NÃO INFORMADO';
-
-    return `
-      <div class="card">
-        <div class="time">
-          ${esc(formatTime(
-            c.createdAt||
-            c.created_at||
-            c.saida||
-            c.time
-          ))}
-        </div>
-
-        <div class="model-small">
-          ${esc(model)}
-        </div>
-
-        <div class="plate-small">
-          ${esc(plate)}
-        </div>
-
-        <div class="origin-small">
-          Origem: ${esc(origin)}
-        </div>
-      </div>`;
+    const c=calls[i];if(!c)return '<div class="card" style="opacity:.16"></div>';
+    return `<div class="card"><div class="time">${esc(formatTime(c.createdAt||c.created_at||c.saida||c.time))}</div><div class="model-small">${esc(c.model||c.modelo||'MODELO NÃO INFORMADO')}</div><div class="plate-small">${esc(c.plate||c.placa||'SEM PLACA')}</div><div class="origin-small">Origem: ${esc(getOrigin(c))}</div></div>`;
   }).join('');
-
-  if(!queueRunning){
-    renderCurrent(calls[0]||null);
-  }
+  if(!queueRunning)renderCurrent(calls[0]||null);
 }
-
 async function processCallQueue(){
-  if(queueRunning)return;
-
-  queueRunning=true;
-
+  if(queueRunning)return;queueRunning=true;
   while(callQueue.length){
-    const c=callQueue.shift();
-
-    renderCurrent(c);
-
-    notifyCall(
-      c.model||c.modelo||'veículo',
-      c.plate||c.placa||''
-    );
-
+    const c=callQueue.shift();activeCall=c;
+    renderCurrent(c);notifyCall(c);
     await sleep(10000);
   }
-
-  queueRunning=false;
-  renderHistory();
+  activeCall=null;queueRunning=false;renderHistory();
 }
-
 function queueFresh(items){
   if(!items.length)return;
-
-  items.sort((a,b)=>toTime(a)-toTime(b))
-    .forEach(c=>callQueue.push(c));
-
+  items.sort((a,b)=>toTime(a)-toTime(b));
+  for(const c of items){
+    if(activeCall&&isSameCall(activeCall,c))continue;
+    if(callQueue.some(q=>isSameCall(q,c)))continue;
+    callQueue.push(c);
+  }
   processCallQueue();
 }
-
 async function load(){
+  if(loadingOperator)return;loadingOperator=true;
   try{
-    const r=await fetch(
-      '/api/calls',
-      {cache:'no-store'}
-    );
-
+    const r=await fetch('/api/calls',{cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
     const data=await r.json();
-
-    const calls=Array.isArray(data.calls)
-      ?data.calls
-      :(Array.isArray(data)?data:[]);
-
+    const calls=Array.isArray(data.calls)?data.calls:(Array.isArray(data)?data:[]);
     operatorCalls=calls;
-
     if(!operatorInitialized){
-      calls.forEach(c=>
-        seenOperator.add(operatorKey(c))
-      );
+      calls.forEach(c=>seenOperator.add(operatorKey(c)));
       operatorInitialized=true;
     }else{
       const fresh=[];
-
       for(const c of calls){
         const key=operatorKey(c);
-
         if(!seenOperator.has(key)){
           seenOperator.add(key);
           fresh.push(c);
         }
       }
-
       queueFresh(fresh);
     }
-
     renderHistory();
-
-  }catch(e){
-    console.error('Erro chamadas:',e);
-  }
+  }catch(e){console.error('Erro chamadas:',e)}
+  finally{loadingOperator=false}
 }
-
-// JUMP PARK - BALI E LA PERGOLETTA
 async function loadJumpOutside(){
+  if(loadingJump)return;loadingJump=true;
   try{
-    const r=await fetch(
-      '/api/jump/veiculos-fora',
-      {cache:'no-store'}
-    );
-
+    const r=await fetch('/api/jump/veiculos-fora',{cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
     const data=await r.json();
-
-    if(!data.ok||
-       !Array.isArray(data.veiculos))return;
-
+    if(!data.ok||!Array.isArray(data.veiculos))return;
     const mapped=data.veiculos.map(carro=>{
-      const origem=String(
-        carro.origem||
-        carro.estabelecimento||
-        'NÃO INFORMADA'
-      ).trim();
-
-      return {
-        id:'jump-'+origem+'-'+(
-          carro.serviceOrderId||
-          carro.serviceOrderCode||
-          `${carro.placa}-${carro.saida}`
-        ),
-
+      const origem=String(carro.origem||carro.estabelecimento||'NÃO INFORMADA').trim();
+      return{
+        id:'jump-'+origem+'-'+(carro.serviceOrderId||carro.serviceOrderCode||`${carro.placa}-${carro.saida}`),
         serviceOrderId:carro.serviceOrderId,
         serviceOrderCode:carro.serviceOrderCode,
-
         model:carro.modelo||'VEÍCULO',
         plate:carro.placa||'SEM PLACA',
-
         operator:origem,
         origin:origem,
         estabelecimento:origem,
-
-        createdAt:
-          carro.saida||new Date().toISOString(),
-
+        createdAt:carro.saida||new Date().toISOString(),
         saida:carro.saida||''
       };
     }).sort((a,b)=>toTime(b)-toTime(a));
-
     if(!jumpInitialized){
-      mapped.forEach(c=>
-        seenJump.add(jumpKey(c))
-      );
-
+      mapped.forEach(c=>seenJump.add(jumpKey(c)));
       jumpCalls=mapped.slice(0,8);
       jumpInitialized=true;
       renderHistory();
       return;
     }
-
     const fresh=[];
-
     for(const c of mapped){
       const key=jumpKey(c);
-
       if(!seenJump.has(key)){
         seenJump.add(key);
         fresh.push(c);
       }
     }
-
     jumpCalls=mapped.slice(0,8);
-
     renderHistory();
     queueFresh(fresh);
-
-  }catch(e){
-    console.error('Erro Jump Park:',e);
-  }
+  }catch(e){console.error('Erro Jump Park:',e)}
+  finally{loadingJump=false}
 }
-
 function clock(){
   const d=new Date();
-
-  document.getElementById('time').textContent=
-    d.toLocaleTimeString('pt-BR',{
-      hour:'2-digit',
-      minute:'2-digit'
-    });
-
-  document.getElementById('date').textContent=
-    d.toLocaleDateString('pt-BR');
+  document.getElementById('time').textContent=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('date').textContent=d.toLocaleDateString('pt-BR');
 }
-
 clock();
 setInterval(clock,1000);
-
 load();
 setInterval(load,1500);
-
 loadJumpOutside();
 setInterval(loadJumpOutside,2000);
 </script>
-
 </body>
 </html>
