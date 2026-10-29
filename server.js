@@ -294,15 +294,45 @@ async function fetchJumpVehicles(establishment) {
     signal: AbortSignal.timeout(12000)
   });
 
-  if (!resposta.ok) {
+  // Lê a resposta uma única vez.
+  const texto = await resposta.text();
+  let dados;
+
+  try {
+    dados = JSON.parse(texto);
+  } catch {
+    if (!resposta.ok) {
+      throw new Error(
+        establishment.name + ": Jump Park HTTP " +
+        resposta.status + " (resposta não é JSON)"
+      );
+    }
     throw new Error(
-      establishment.name +
-      ": Jump Park HTTP " +
-      resposta.status
+      establishment.name + ": Jump Park retornou conteúdo inválido"
     );
   }
 
-  const dados = await resposta.json();
+  if (!resposta.ok) {
+    // Mostra apenas uma mensagem curta do erro.
+    const mensagem = typeof dados?.message === "string"
+      ? dados.message
+      : typeof dados?.error === "string"
+        ? dados.error
+        : typeof dados?.data?.message === "string"
+          ? dados.data.message
+          : "";
+
+    const detalhe = mensagem
+      .replace(/[\r\n]/g, " ")
+      .replace(/Bearer\s+\S+/gi, "[credencial ocultada]")
+      .replace(/[^\wÀ-ÿ .,;:!?()/-]/g, "")
+      .slice(0, 160);
+
+    throw new Error(
+      establishment.name + ": Jump Park HTTP " +
+      resposta.status + (detalhe ? " - " + detalhe : "")
+    );
+  }
 
   if (!Array.isArray(dados?.data?.content)) {
     throw new Error(
@@ -344,7 +374,7 @@ async function syncEstablishment(establishment) {
         .filter(Boolean)
     );
 
-    // Na primeira consulta, não anunciar
+    // Primeira consulta não anuncia
     // veículos que já estavam fora.
     if (!state.initialized) {
       state.previousIds = currentIds;
