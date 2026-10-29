@@ -190,13 +190,19 @@ const JUMP_INTERVAL = 15000;
 const establishments = [
   {
     name: "Bali",
-    id: process.env.JUMP_ESTABLISHMENT_ID
+    id: process.env.JUMP_ESTABLISHMENT_ID,
+    integrationId: process.env.JUMP_INTEGRATION_ID,
+    token: process.env.JUMP_ACCESS_TOKEN
   },
   {
     name: "La Pergoletta",
     id:
       process.env.JUMP_PERGOLETTA_ESTABLISHMENT_ID ||
-      "30153"
+      "30153",
+    integrationId:
+      process.env.JUMP_PERGOLETTA_INTEGRATION_ID,
+    token:
+      process.env.JUMP_PERGOLETTA_ACCESS_TOKEN
   }
 ];
 
@@ -250,17 +256,14 @@ function jumpVehicleId(carro) {
 // =====================================
 
 async function fetchJumpVehicles(establishment) {
-  const integrationId =
-    process.env.JUMP_INTEGRATION_ID;
-
+  const integrationId = establishment.integrationId;
   const establishmentId = establishment.id;
-
-  const token =
-    process.env.JUMP_ACCESS_TOKEN;
+  const token = establishment.token;
 
   if (!integrationId || !establishmentId || !token) {
     throw new Error(
-      "Credenciais Jump Park não configuradas"
+      establishment.name +
+      ": credenciais Jump Park não configuradas"
     );
   }
 
@@ -341,7 +344,7 @@ async function syncEstablishment(establishment) {
         .filter(Boolean)
     );
 
-    // Primeira consulta não anuncia
+    // Na primeira consulta, não anunciar
     // veículos que já estavam fora.
     if (!state.initialized) {
       state.previousIds = currentIds;
@@ -488,6 +491,8 @@ app.get("/api/jump/veiculos-fora", async (req, res) => {
 // =====================================
 
 app.get("/api/jump/debug", (req, res) => {
+  res.set("Cache-Control", "no-store");
+
   res.json({
     integrationId:
       !!process.env.JUMP_INTEGRATION_ID,
@@ -497,6 +502,10 @@ app.get("/api/jump/debug", (req, res) => {
       establishments[1].id,
     accessToken:
       !!process.env.JUMP_ACCESS_TOKEN,
+    pergolettaIntegrationConfigured:
+      !!process.env.JUMP_PERGOLETTA_INTEGRATION_ID,
+    pergolettaTokenConfigured:
+      !!process.env.JUMP_PERGOLETTA_ACCESS_TOKEN,
     inicializado:
       establishments.some(e =>
         jumpStates.get(e.name).initialized
