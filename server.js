@@ -40,7 +40,6 @@ function addCall(model, plate, operator, origin) {
 
   calls.push(call);
 
-  // Mantém um histórico suficiente para o rádio
   if (calls.length > 2000) {
     calls = calls.slice(-2000);
   }
@@ -183,17 +182,40 @@ app.get("/api/radio/calls", (req, res) => {
 
 // =====================================
 // INTEGRAÇÃO JUMP PARK
+// BALI + LA PERGOLETTA
 // =====================================
 
+const JUMP_INTERVAL = 15000;
+
+const establishments = [
+  {
+    name: "Bali",
+    id: process.env.JUMP_ESTABLISHMENT_ID
+  },
+  {
+    name: "La Pergoletta",
+    id:
+      process.env.JUMP_PERGOLETTA_ESTABLISHMENT_ID ||
+      "30153"
+  }
+];
+
 let jumpVehicles = [];
-let jumpInitialized = false;
-let jumpPreviousIds = new Set();
 let jumpLastUpdate = null;
 let jumpLastError = null;
 let jumpChecking = false;
 
-// Consulta automática a cada 15 segundos
-const JUMP_INTERVAL = 15000;
+const jumpStates = new Map();
+
+for (const establishment of establishments) {
+  jumpStates.set(establishment.name, {
+    initialized: false,
+    previousIds: new Set(),
+    vehicles: [],
+    lastUpdate: null,
+    lastError: null
+  });
+}
 
 // =====================================
 // IDENTIFICAR VEÍCULO JUMP
@@ -208,7 +230,6 @@ function jumpVehicleId(carro) {
     return String(id);
   }
 
-  // Identificação alternativa quando não há ID
   const plate = String(
     carro.plate || ""
   ).trim();
@@ -228,19 +249,18 @@ function jumpVehicleId(carro) {
 // CONSULTAR API JUMP PARK
 // =====================================
 
-async function fetchJumpVehicles() {
+async function fetchJumpVehicles(establishment) {
   const integrationId =
     process.env.JUMP_INTEGRATION_ID;
 
-  const establishmentId =
-    process.env.JUMP_ESTABLISHMENT_ID;
+  const establishmentId = establishment.id;
 
   const token =
     process.env.JUMP_ACCESS_TOKEN;
 
   if (!integrationId || !establishmentId || !token) {
     throw new Error(
-      "Credenciais da Jump Park não configuradas"
+      "Credenciais Jump Park não configuradas"
     );
   }
 
@@ -271,23 +291,24 @@ async function fetchJumpVehicles() {
     signal: AbortSignal.timeout(12000)
   });
 
-  const dados = await resposta.json();
-
   if (!resposta.ok) {
     throw new Error(
-      "Jump Park retornou HTTP " + resposta.status
+      establishment.name +
+      ": Jump Park HTTP " +
+      resposta.status
     );
   }
+
+  const dados = await resposta.json();
 
   if (!Array.isArray(dados?.data?.content)) {
     throw new Error(
-      "Formato inesperado da resposta Jump Park"
+      establishment.name +
+      ": formato inesperado da API"
     );
   }
 
-  const lista = dados.data.content;
-
-  return lista.map(carro => ({
+  return dados.data.content.map(carro => ({
     serviceOrderId: carro.serviceOrderId,
     serviceOrderCode: carro.serviceOrderCode,
     placa: carro.plate || "",
@@ -297,12 +318,83 @@ async function fetchJumpVehicles() {
     entrada: carro.entryDateTime || "",
     saida: carro.exitDateTime || "",
     situacao: carro.operationSituationName || "",
+    origem: establishment.name,
+    estabelecimento: establishment.name,
     _id: jumpVehicleId(carro)
   }));
 }
 
 // =====================================
-// SINCRONIZAR JUMP COM RÁDIO
+// SINCRONIZAR CADA ESTABELECIMENTO
+// =====================================
+
+async function syncEstablishment(establishment) {
+  const state = jumpStates.get(establishment.name);
+
+  try {
+    const vehicles =
+      await fetchJumpVehicles(establishment);
+
+    const currentIds = new Set(
+      vehicles
+        .map(v => v._id)
+        .filter(Boolean)
+    );
+
+    // Primeira consulta não anuncia
+    // veículos que já estavam fora.
+    if (!state.initialized) {
+      state.previousIds = currentIds;
+      state.initialized = true;
+
+      console.log(
+        "JUMP INICIALIZADO:",
+        establishment.name,
+        vehicles.length,
+        "veículos fora"
+      );
+    } else {
+      const novos = vehicles.filter(v =>
+        v._id &&
+        !state.previousIds.has(v._id)
+      );
+
+      for (const v of novos) {
+        addCall(
+          v.modelo || "Veículo",
+          v.placa || "",
+          "Jump Park",
+          establishment.name
+        );
+
+        console.log(
+          "JUMP ENVIADO PARA RÁDIO:",
+          establishment.name,
+          v.modelo,
+          v.placa
+        );
+      }
+
+      state.previousIds = currentIds;
+    }
+
+    state.vehicles = vehicles;
+    state.lastUpdate = new Date().toISOString();
+    state.lastError = null;
+
+  } catch (erro) {
+    state.lastError = erro.message;
+
+    console.error(
+      "ERRO JUMP PARK:",
+      establishment.name,
+      erro.message
+    );
+  }
+}
+
+// =====================================
+// SINCRONIZAÇÃO GERAL
 // =====================================
 
 async function syncJump() {
@@ -311,78 +403,32 @@ async function syncJump() {
   jumpChecking = true;
 
   try {
-    const vehicles = await fetchJumpVehicles();
-
-    const currentIds = new Set(
-      vehicles
-        .map(v => v._id)
-        .filter(Boolean)
+    await Promise.all(
+      establishments.map(establishment =>
+        syncEstablishment(establishment)
+      )
     );
 
-    // Primeira consulta:
-    // não anuncia os veículos antigos
-    if (!jumpInitialized) {
-      jumpPreviousIds = currentIds;
-      jumpInitialized = true;
+    jumpVehicles = establishments.flatMap(
+      establishment => {
+        const state =
+          jumpStates.get(establishment.name);
 
-      console.log(
-        "Jump Park inicializada:",
-        vehicles.length,
-        "veículos fora"
-      );
-    } else {
-      const novos = vehicles.filter(v =>
-        v._id &&
-        !jumpPreviousIds.has(v._id)
-      );
-
-      for (const v of novos) {
-        const model = v.modelo || "Veículo";
-        const plate = v.placa || "";
-
-        // Origem configurada para chamadas Jump Park.
-        // Ajustar caso existam vários estabelecimentos.
-        const origin = "Jump Park";
-
-        addCall(
-          model,
-          plate,
-          "Jump Park",
-          origin
-        );
-
-        console.log(
-          "JUMP ENVIADO PARA RÁDIO:",
-          model,
-          plate
-        );
+        return state.vehicles;
       }
+    );
 
-      jumpPreviousIds = currentIds;
-    }
+    const errors = establishments
+      .map(establishment =>
+        jumpStates.get(establishment.name).lastError
+      )
+      .filter(Boolean);
 
-    jumpVehicles = vehicles.map(v => ({
-      serviceOrderId: v.serviceOrderId,
-      serviceOrderCode: v.serviceOrderCode,
-      placa: v.placa,
-      modelo: v.modelo,
-      cor: v.cor,
-      cliente: v.cliente,
-      entrada: v.entrada,
-      saida: v.saida,
-      situacao: v.situacao
-    }));
+    jumpLastError =
+      errors.length ? errors.join(" | ") : null;
 
     jumpLastUpdate = new Date().toISOString();
-    jumpLastError = null;
 
-  } catch (erro) {
-    jumpLastError = erro.message;
-
-    console.error(
-      "ERRO JUMP PARK:",
-      erro.message
-    );
   } finally {
     jumpChecking = false;
   }
@@ -393,12 +439,21 @@ async function syncJump() {
 // =====================================
 
 app.get("/api/jump/veiculos-fora", async (req, res) => {
-  // Mantém a consulta atualizada quando possível
-  if (!jumpInitialized && !jumpChecking) {
+  const initialized = establishments.some(
+    establishment =>
+      jumpStates.get(establishment.name).initialized
+  );
+
+  if (!initialized && !jumpChecking) {
     await syncJump();
   }
 
-  if (!jumpInitialized && jumpLastError) {
+  const ready = establishments.some(
+    establishment =>
+      jumpStates.get(establishment.name).initialized
+  );
+
+  if (!ready && jumpLastError) {
     return res.status(503).json({
       ok: false,
       message: jumpLastError
@@ -410,7 +465,19 @@ app.get("/api/jump/veiculos-fora", async (req, res) => {
   res.json({
     ok: true,
     total: jumpVehicles.length,
-    veiculos: jumpVehicles,
+    veiculos: jumpVehicles.map(v => ({
+      serviceOrderId: v.serviceOrderId,
+      serviceOrderCode: v.serviceOrderCode,
+      placa: v.placa,
+      modelo: v.modelo,
+      cor: v.cor,
+      cliente: v.cliente,
+      entrada: v.entrada,
+      saida: v.saida,
+      situacao: v.situacao,
+      origem: v.origem,
+      estabelecimento: v.estabelecimento
+    })),
     atualizadoEm: jumpLastUpdate,
     aviso: jumpLastError
   });
@@ -422,13 +489,32 @@ app.get("/api/jump/veiculos-fora", async (req, res) => {
 
 app.get("/api/jump/debug", (req, res) => {
   res.json({
-    integrationId: !!process.env.JUMP_INTEGRATION_ID,
-    establishmentId: !!process.env.JUMP_ESTABLISHMENT_ID,
-    accessToken: !!process.env.JUMP_ACCESS_TOKEN,
-    inicializado: jumpInitialized,
+    integrationId:
+      !!process.env.JUMP_INTEGRATION_ID,
+    establishmentId:
+      !!process.env.JUMP_ESTABLISHMENT_ID,
+    pergolettaId:
+      establishments[1].id,
+    accessToken:
+      !!process.env.JUMP_ACCESS_TOKEN,
+    inicializado:
+      establishments.some(e =>
+        jumpStates.get(e.name).initialized
+      ),
     ultimaAtualizacao: jumpLastUpdate,
     ultimoErro: jumpLastError,
-    totalVeiculosFora: jumpVehicles.length
+    totalVeiculosFora: jumpVehicles.length,
+    estabelecimentos: establishments.map(e => {
+      const state = jumpStates.get(e.name);
+
+      return {
+        nome: e.name,
+        inicializado: state.initialized,
+        total: state.vehicles.length,
+        atualizadoEm: state.lastUpdate,
+        erro: state.lastError
+      };
+    })
   });
 });
 
@@ -441,7 +527,6 @@ app.listen(PORT, "0.0.0.0", () => {
     "ZANE PARK funcionando na porta " + PORT
   );
 
-  // Inicia consulta automática da Jump Park
   syncJump();
 
   setInterval(() => {
